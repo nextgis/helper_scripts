@@ -1,4 +1,4 @@
-# nextgisweb_helper_scripts
+# NextGIS Web helper scripts
 
 Helpful NGW scripts
 
