@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# sync wfs layesr with ngw resources
+# Project: Sync WFS layesr with NGW resources
+# Author: Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+# Copyright: 2015, NextGIS <info@nextgis.com>
 
 from osgeo import ogr
 from osgeo import osr

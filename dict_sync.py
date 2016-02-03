@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+# Project: Sync lookup table and remote dictionary
+# Author: Denis Rykov <denis.rykov@nextgis.com>
+# Author: Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+# Copyright: 2015, NextGIS <info@nextgis.com>
+
 import json
 import requests
 import time
