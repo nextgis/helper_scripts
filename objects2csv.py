@@ -91,7 +91,7 @@ courl = lambda: '%s/api/resource/' % URL
 #Печать шапки csv
 
 fs = open('result.csv','w')
-fs.write("1,2,3\n")
+fs.write("name,id\n")
 fs.close()
 
 
@@ -107,17 +107,16 @@ for group_id in groups:
 
             #модуль csv не работает с файлами открытыми на дозапись, поэтому генерирую строку csv вручную
             export_string=''
-            #for name, valueq in values:
             export_string += '"'+unicode(layerdesc['resource']['display_name'])+'",'
-            export_string += '"'+str(layerdesc['resource']['id'])+'",'
+            export_string += '"'+str(layerdesc['resource']['id'])+'"'
+            export_string += "\n"
 
 
             print export_string
 
             fs = open('result.csv','a')
-            fs.write(export_string+"\n")
+            fs.write(export_string.encode("UTF-8"))
             fs.close()
-
 
 
 
