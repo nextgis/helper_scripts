@@ -184,7 +184,7 @@ if __name__ == '__main__':
             wfs_result[check_field_val] = dict()        
             wfs_result[check_field_val]['id'] = check_field_val      
             wfs_result[check_field_val]['fields'] = wfs_fields
-            wfs_result[check_field_val]['geom'] = mercator_geom
+            wfs_result[check_field_val]['geom'] = mercator_geom.Clone()
             
         # compare wfs_result and ngw_result
         for ngw_id in ngw_result:
