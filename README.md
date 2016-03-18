@@ -12,3 +12,9 @@ Helpful NGW scripts
 # License
 
 The code is distributed under the terms of GNU GPL v.2
+
+Commercial support
+----------
+Need to fix a bug or add a feature in NextGIS Web helper scripts? We provide custom development and support for this software. [Contact us](http://nextgis.ru/en/contact/) to discuss options!
+
+[![http://nextgis.com](http://nextgis.ru/img/nextgis.png)](http://nextgis.com)
