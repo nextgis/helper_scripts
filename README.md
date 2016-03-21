@@ -11,7 +11,7 @@ Helpful NGW scripts
  
 # License
 
-The code is distributed under the terms of GNU GPL v.2
+The code is distributed under the terms of GNU GPL v2 or any later version
 
 Commercial support
 ----------
