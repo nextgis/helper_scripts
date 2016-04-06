@@ -134,8 +134,6 @@ class OOPTFederate:
 
             
 
-
-
             '''
             #deprecated generation of prj
             srcSpatialRef = layer.GetSpatialRef()
