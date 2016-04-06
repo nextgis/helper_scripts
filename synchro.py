@@ -31,6 +31,62 @@ from osgeo import osr
 import urllib
 
 import zipfile
+import requests
+from json import dumps
+
+
+#ngw api
+URL = 'http://176.9.38.120/pa'
+AUTH = ('administrator', 'admin')
+
+s = requests.Session()
+
+def req(method, url, json=None, **kwargs):
+    """ Простейшая обертка над библиотекой requests c выводом отправляемых
+    запросов в stdout. К работе NextGISWeb это имеет малое отношение. """
+
+    jsonuc = None
+
+    if json:
+        kwargs['data'] = dumps(json)
+        jsonuc = dumps(json, ensure_ascii=False)
+
+    req = requests.Request(method, url, auth=AUTH, **kwargs)
+    preq = req.prepare()
+
+    print ""
+    print ">>> %s %s" % (method, url)
+
+    if jsonuc:
+        print ">>> %s" % jsonuc
+
+    resp = s.send(preq)
+
+    assert resp.status_code / 100 == 2
+
+    jsonresp = resp.json()
+
+    for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
+        print "<<< %s" % line
+
+    return jsonresp
+
+# Обертки по именам HTTP запросов, по одной на каждый тип запроса
+
+def get(url, **kwargs): return req('GET', url, **kwargs)            # NOQA
+def post(url, **kwargs): return req('POST', url, **kwargs)          # NOQA
+def put(url, **kwargs): return req('PUT', url, **kwargs)            # NOQA
+def delete(url, **kwargs): return req('DELETE', url, **kwargs)      # NOQA
+
+# Собственно работа с REST API
+
+iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
+featureurl = lambda (id): '%s/api/resource/%d/feature/' % (URL, id)
+courl = lambda: '%s/api/resource/' % URL
+
+#ngw api
+
+
 
 class OOPTFederate:
     '''project70'''
@@ -58,6 +114,13 @@ class OOPTFederate:
 
     def download_ngw_snapshot(self):
         ngwUrl='http://176.9.38.120/pa/resource/7'
+
+        vectlyr = get(featureurl(7))
+        #print vectlyr
+        print len(vectlyr)
+
+
+
         pass
 
 
@@ -68,7 +131,7 @@ class OOPTFederate:
 
 
 
-        tmpMiddeShape=os.path.join('tmp','ua-middle'+'.geojson')
+        tmpMiddeShape=os.path.join('','ua-middle'+'.geojson')
 
         outShapefile = tmpMiddeShape
         print outShapefile
@@ -165,6 +228,10 @@ class OOPTFederate:
                 geom = feature.GetGeometryRef()
                 #print geom.ExportToWkt()
                             # Create the feature and set values
+
+                sr = osr.SpatialReference()
+                sr.ImportFromEPSG(3857)
+                geom.TransformTo(sr)
 
                 featureDefn = outLayer.GetLayerDefn()
 
