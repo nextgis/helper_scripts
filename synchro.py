@@ -216,14 +216,14 @@ class OOPTFederate:
             layer.SetAttributeFilter("code = 'UA'")
             srs = layer.GetSpatialRef()
             print 'Layer: %s, Features: %s, SR: %s...' % (layer.GetName(), layer.GetFeatureCount(), srs.ExportToWkt()[0:50])
+            featureCount=layer.GetFeatureCount()
+
             # iterate over features
-            feat = layer.GetNextFeature()
-            print feat.GetField("name")
-            while feat is not None:
+            for x in xrange(0, featureCount):
                 feat = layer.GetNextFeature()
                 print feat.GetField("name")
-                # do something more..
             feat = None
+            featureCount = None
 
             
 
