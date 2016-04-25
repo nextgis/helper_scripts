@@ -25,68 +25,13 @@
 import os
 import tempfile
 
-from osgeo import ogr
+from osgeo import ogr, gdal
 from osgeo import osr
 
 import urllib
 
 import zipfile
-import requests
-from json import dumps
-
-
-#ngw api
-URL = 'http://176.9.38.120/pa'
-AUTH = ('administrator', 'admin')
-
-s = requests.Session()
-
-def req(method, url, json=None, **kwargs):
-    """ Простейшая обертка над библиотекой requests c выводом отправляемых
-    запросов в stdout. К работе NextGISWeb это имеет малое отношение. """
-
-    jsonuc = None
-
-    if json:
-        kwargs['data'] = dumps(json)
-        jsonuc = dumps(json, ensure_ascii=False)
-
-    req = requests.Request(method, url, auth=AUTH, **kwargs)
-    preq = req.prepare()
-
-    print ""
-    print ">>> %s %s" % (method, url)
-
-    if jsonuc:
-        print ">>> %s" % jsonuc
-
-    resp = s.send(preq)
-
-    assert resp.status_code / 100 == 2
-
-    jsonresp = resp.json()
-
-    for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
-        print "<<< %s" % line
-
-    return jsonresp
-
-# Обертки по именам HTTP запросов, по одной на каждый тип запроса
-
-def get(url, **kwargs): return req('GET', url, **kwargs)            # NOQA
-def post(url, **kwargs): return req('POST', url, **kwargs)          # NOQA
-def put(url, **kwargs): return req('PUT', url, **kwargs)            # NOQA
-def delete(url, **kwargs): return req('DELETE', url, **kwargs)      # NOQA
-
-# Собственно работа с REST API
-
-iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
-featureurl = lambda (id): '%s/api/resource/%d/feature/' % (URL, id)
-courl = lambda: '%s/api/resource/' % URL
-
-#ngw api
-
-
+import sys
 
 class OOPTFederate:
     '''project70'''
@@ -105,6 +50,12 @@ class OOPTFederate:
 
 
 ]
+        ua_sources=[                    'http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip',
+
+
+
+]
+
         #self.accounts='1'
         self.accounts={'ua':{'sources':ua_sources}}
         #self.accounts.ua.sources.push('http://opengeo.intetics.com.ua/osm/pa/data/protected_area_polygon.zip')
@@ -114,13 +65,6 @@ class OOPTFederate:
 
     def download_ngw_snapshot(self):
         ngwUrl='http://176.9.38.120/pa/resource/7'
-
-        vectlyr = get(featureurl(7))
-        #print vectlyr
-        print len(vectlyr)
-
-
-
         pass
 
 
@@ -131,18 +75,21 @@ class OOPTFederate:
 
 
 
-        tmpMiddeShape=os.path.join('','ua-middle'+'.geojson')
+        tmpMiddeShape=os.path.join('tmp','ua-middle'+'.geojson')
+        tmpWebSnapshot=os.path.join('tmp','websnapshotUA'+'.geojson')
 
-        outShapefile = tmpMiddeShape
-        print outShapefile
+        #Login to WFS here
+        gdal.SetConfigOption('GDAL_HTTP_USERPWD', 'administrator:admin')
+
+        tmpMiddleFilename = tmpMiddeShape
         outDriver = ogr.GetDriverByName("GeoJSON")
-        if os.path.exists(outShapefile):
-            outDriver.DeleteDataSource(outShapefile)
-        outDataSource = outDriver.CreateDataSource(outShapefile)
+        if os.path.exists(tmpMiddleFilename):
+            outDriver.DeleteDataSource(tmpMiddleFilename)
+        outDataSource = outDriver.CreateDataSource(tmpMiddleFilename)
         outLayer = outDataSource.CreateLayer("out", geom_type=ogr.wkbMultiPolygon)
 
 
-
+        #Create fields in middle data
         codeField = ogr.FieldDefn("code", ogr.OFTString)
         outLayer.CreateField(codeField)
 
@@ -152,8 +99,8 @@ class OOPTFederate:
         codeField = ogr.FieldDefn("name", ogr.OFTString)
         outLayer.CreateField(codeField)
 
+        #Download each zip
         for url in self.accounts['ua']['sources']:
-            #print 'open url'+url
 
             tempZipFile = tempfile.NamedTemporaryFile(prefix='report_', suffix='.zip', dir='/tmp', delete=True)
             print 'download ' + url
@@ -172,7 +119,8 @@ class OOPTFederate:
 
            
 
-
+            #Open each zip
+    
             driver = ogr.GetDriverByName('ESRI Shapefile')
             dataSource = driver.Open(shpFileName, 0) # 0 means read-only. 1 means writeable.
 
@@ -197,6 +145,8 @@ class OOPTFederate:
 
             
 
+
+
             '''
             #deprecated generation of prj
             srcSpatialRef = layer.GetSpatialRef()
@@ -207,6 +157,7 @@ class OOPTFederate:
             file.close()
             '''
 
+            #Read data from shp
 
             if ('protected_area' in url): 
                 ooptType='protected_area'
@@ -226,18 +177,12 @@ class OOPTFederate:
 
             for feature in layer:
                 geom = feature.GetGeometryRef()
-                #print geom.ExportToWkt()
-                            # Create the feature and set values
-
-                sr = osr.SpatialReference()
-                sr.ImportFromEPSG(3857)
-                geom.TransformTo(sr)
 
                 featureDefn = outLayer.GetLayerDefn()
-
                 outfeature = ogr.Feature(featureDefn)
-
                 outfeature.SetGeometry(geom)
+
+                #Add our special field - oopt_type
 
                 outfeature.SetField("code", 'ua')
                 outfeature.SetField("oopt_type", ooptType)
@@ -250,9 +195,40 @@ class OOPTFederate:
             # Close DataSource
             #inDataSource.Destroy()
             
+            #Now we have ogr with all data from one server with our fields
+
+            #Выкачиваем из веба всё по этому источнику.
+
+            #Make ogr object - wfs connection to ngw - Get WFS layers and iterate over features
+            #Filter ngw objects by source attribute - using OGR WFS filter 
+
+            print 'Working with WFS'
+            wfs_drv = ogr.GetDriverByName('WFS')
+            # Open the webservice
+            url = 'http://176.9.38.120/pa'+'/api/resource/10/wfs'
+            wfsLayerName='main'
+            wfs_ds = wfs_drv.Open('WFS:' + url)
+            if not wfs_ds:
+                sys.exit('ERROR: can not open WFS datasource')
+            else:
+                pass
+            layer = wfs_ds.GetLayerByName(wfsLayerName)
+            layer.SetAttributeFilter("code = 'UA'")
+            srs = layer.GetSpatialRef()
+            print 'Layer: %s, Features: %s, SR: %s...' % (layer.GetName(), layer.GetFeatureCount(), srs.ExportToWkt()[0:50])
+            # iterate over features
+            feat = layer.GetNextFeature()
+            print feat.GetField("name")
+            while feat is not None:
+                feat = layer.GetNextFeature()
+                print feat.GetField("name")
+                # do something more..
+            feat = None
+
+            
 
 
-            #clear data in web
+
 
             #put data from shp to web
 
