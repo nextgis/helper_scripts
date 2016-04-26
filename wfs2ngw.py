@@ -109,7 +109,7 @@ if __name__ == '__main__':
     for resid, name in (zip(ngw_resources, wfs_names)):	
         print "Proceed " + name + " ..."
         
-        # get NGW array
+        # Put NGW records into array
         req = requests.get(ngw_url + str(resid) + '/feature/', auth=ngw_creds)
         dictionary = req.json()
         ngw_result = dict()
@@ -126,7 +126,7 @@ if __name__ == '__main__':
                 fields=item['fields'],
             )
             
-        # get WFS array
+        # Put WFS records into array
     
         lyr = ds.GetLayerByName(name)	
         lyr.ResetReading()
