@@ -38,6 +38,78 @@ class OOPTFederate:
 
     accounts = {}
 
+
+    #Taken from wfs2ngw.py
+    def compareValues(ngw_value, wfs_value):
+        if (ngw_value == '' or ngw_value == None) and (wfs_value == '' or wfs_value == None):
+            return True
+        
+        if isinstance(ngw_value, float) and isinstance(wfs_value, float):              
+            return abs(ngw_value - wfs_value) < delta 
+            
+        if ngw_value != wfs_value:      
+            return False
+        return True
+        
+    def comparePoints(ngw_pt, wfs_pt):
+        return (abs(ngw_pt.GetX() - wfs_pt.GetX()) < delta) and (abs(ngw_pt.GetY() - wfs_pt.GetY()) < delta)
+        
+    def compareLines(ngw_line, wfs_line):
+        if ngw_line.GetPointCount() != wfs_line.GetPointCount():
+            return False
+        for i in range(ngw_line.GetPointCount()):
+            if not comparePoints(ngw_line.GetPoint(i), wfs_line.GetPoint(i)):
+                return False
+            
+        return True
+        
+    def comparePolygons(ngw_poly, wfs_poly):
+        if ngw_poly.GetGeometryCount() != wfs_poly.GetGeometryCount():
+            return False
+        for i in range(ngw_poly.GetPointCount()):
+            if not comparePoints(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
+                return False
+
+        return True                 
+        
+    def compareGeom(ngw_geom, wfs_geom):    
+        if ngw_geom.GetGeometryType() is ogr.wkbPoint:      
+            return comparePoints(ngw_geom, wfs_geom)  
+        elif ngw_geom.GetGeometryType() is ogr.wkbLineString:
+            return compareLines(ngw_geom, wfs_geom)  
+        elif ngw_geom.GetGeometryType() is ogr.wkbPolygon:
+            return comparePolygons(ngw_geom, wfs_geom)  
+        elif ngw_geom.GetGeometryType() is ogr.wkbMultiPoint:
+            for i in range(ngw_geom.GetGeometryCount()):
+                if not comparePoint(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                    return False
+        elif ngw_geom.GetGeometryType() is ogr.wkbMultiLineString:
+            for i in range(ngw_geom.GetGeometryCount()):
+                if not compareLines(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                    return False
+        elif ngw_geom.GetGeometryType() is ogr.wkbMultiPolygon:
+            for i in range(ngw_geom.GetGeometryCount()):
+                if not comparePolygons(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                    return False
+        else:
+            return True # this is unexpected
+
+        return True     
+
+    def compareFeatures(ngw_feature, wfs_feature):
+        # compare attributes
+        ngw_fields = ngw_feature['fields']
+        wfs_fields = wfs_feature['fields']
+        for ngw_field in ngw_fields:
+            if not compareValues(ngw_fields[ngw_field], wfs_fields[ngw_field]):
+                return False
+
+    #Taken from wfs2ngw.py
+
+
+
+
+
     def __init__(self):
 
         
@@ -73,6 +145,11 @@ class OOPTFederate:
         #print self.accounts
         #print self.accounts['ua']['sources']
 
+        '''
+        ExternalLayer   - raw data from external provider
+        brokerLayer        - processed data from external provider in our format with our fields
+        ngwLayer        - layer in ngw
+        '''
 
 
         tmpMiddeShape=os.path.join('tmp','ua-middle'+'.geojson')
@@ -85,19 +162,20 @@ class OOPTFederate:
         outDriver = ogr.GetDriverByName("GeoJSON")
         if os.path.exists(tmpMiddleFilename):
             outDriver.DeleteDataSource(tmpMiddleFilename)
-        outDataSource = outDriver.CreateDataSource(tmpMiddleFilename)
-        outLayer = outDataSource.CreateLayer("out", geom_type=ogr.wkbMultiPolygon)
+        #outDataSource = outDriver.CreateDataSource(tmpMiddleFilename)
+        outDataSource = ogr.GetDriverByName( 'Memory' ).CreateDataSource(tmpMiddleFilename)
+        brokerLayer = outDataSource.CreateLayer("Processed data from external provider in our format with our fields", geom_type=ogr.wkbMultiPolygon)
 
 
         #Create fields in middle data
         codeField = ogr.FieldDefn("code", ogr.OFTString)
-        outLayer.CreateField(codeField)
+        brokerLayer.CreateField(codeField)
 
         codeField = ogr.FieldDefn("oopt_type", ogr.OFTString)
-        outLayer.CreateField(codeField)
+        brokerLayer.CreateField(codeField)
 
         codeField = ogr.FieldDefn("name", ogr.OFTString)
-        outLayer.CreateField(codeField)
+        brokerLayer.CreateField(codeField)
 
         #Download each zip
         for url in self.accounts['ua']['sources']:
@@ -129,8 +207,8 @@ class OOPTFederate:
                 print 'Could not open %s' % (shpFileName)
             else:
                 print 'Opened %s' % (shpFileName)
-                layer = dataSource.GetLayer()
-                featureCount = layer.GetFeatureCount()
+                ExternalLayer = dataSource.GetLayer()
+                featureCount = ExternalLayer.GetFeatureCount()
                 print "Number of features in %s: %d" % (os.path.basename(shpFileName),featureCount)
 
             #does external data valid?
@@ -140,11 +218,6 @@ class OOPTFederate:
 
             #change_attrs
             #create new layer
-
-
-
-            
-
 
 
             '''
@@ -172,13 +245,12 @@ class OOPTFederate:
             if ('nature_conservation' in url): 
                 ooptType='nature_conservation'
 
-            print 'start read'
-            print ooptType
 
-            for feature in layer:
+
+            for feature in ExternalLayer:
                 geom = feature.GetGeometryRef()
 
-                featureDefn = outLayer.GetLayerDefn()
+                featureDefn = brokerLayer.GetLayerDefn()
                 outfeature = ogr.Feature(featureDefn)
                 outfeature.SetGeometry(geom)
 
@@ -189,20 +261,24 @@ class OOPTFederate:
                 if feature.GetField("name") != None:
                     outfeature.SetField("name", feature.GetField("name"))
                 if (geom.IsValid()):                
-                    outLayer.CreateFeature(outfeature)
+                    brokerLayer.CreateFeature(outfeature)
+
+            #brokerLayer = None
+
+            
             
 
-            # Close DataSource
-            #inDataSource.Destroy()
-            
-            #Now we have ogr with all data from one server with our fields
+           
+            #Now we have ogr layer with all data from one server with our fields
 
             #Выкачиваем из веба всё по этому источнику.
 
             #Make ogr object - wfs connection to ngw - Get WFS layers and iterate over features
             #Filter ngw objects by source attribute - using OGR WFS filter 
 
-            print 'Working with WFS'
+
+
+            print 'Connecting to our storage NGW via WFS'
             wfs_drv = ogr.GetDriverByName('WFS')
             # Open the webservice
             url = 'http://176.9.38.120/pa'+'/api/resource/10/wfs'
@@ -212,18 +288,40 @@ class OOPTFederate:
                 sys.exit('ERROR: can not open WFS datasource')
             else:
                 pass
-            layer = wfs_ds.GetLayerByName(wfsLayerName)
-            layer.SetAttributeFilter("code = 'UA'")
-            srs = layer.GetSpatialRef()
-            print 'Layer: %s, Features: %s, SR: %s...' % (layer.GetName(), layer.GetFeatureCount(), srs.ExportToWkt()[0:50])
-            featureCount=layer.GetFeatureCount()
+            ngwLayer = wfs_ds.GetLayerByName(wfsLayerName)
+            ngwLayer.SetAttributeFilter("code = 'UA'")
+            srs = ngwLayer.GetSpatialRef()
+            print 'ngwLayer: %s, Features: %s, SR: %s...' % (ngwLayer.GetName(), ngwLayer.GetFeatureCount(), srs.ExportToWkt()[0:250])
+            ngwFeatureCount=ngwLayer.GetFeatureCount()
 
-            # iterate over features
-            for x in xrange(0, featureCount):
-                feat = layer.GetNextFeature()
-                print feat.GetField("name")
-            feat = None
-            featureCount = None
+            '''
+    Сверяем записи локальные c вебом по атрибутам и по геометрии
+        одинаковы - пропускаем
+        не одинаковы - удалить и залить этот
+        остались несравненные локальные запипи - появилось в локальном - залить этот  
+    Сверяем записи в вебе и локальные:     
+        есть в вебе, нет в локальном - удалилось в локальном - удалить на сервере
+            '''
+
+            #re-open middle layer
+            #brokerLayer = outDataSource.GetLayer() #и вот тут ничего не делается
+            brokerLayer.ResetReading()
+            brokerFeatureCount=brokerLayer.GetFeatureCount()
+    
+
+
+            #print 'ngwLayer: %s, Features: %s, SR: %s...' % (brokerLayer.GetName(), brokerLayer.GetFeatureCount(), brokerLayer.GetSpatialRef().ExportToWkt())
+            for o in xrange(0,brokerFeatureCount):
+                brokerFeature=brokerLayer.GetNextFeature()
+                print 'broker&& %s '% (brokerFeature.GetField("name"))
+                # iterate over features wfs
+                ngwLayer.ResetReading()
+                for x in xrange(0, ngwFeatureCount):
+                    ngwFeature = ngwLayer.GetNextFeature()
+                    print ngwFeature.GetField("name")
+
+                ngwFeature = None
+                ngwFeatureCount = None
 
             
 
@@ -248,7 +346,7 @@ class OOPTFederate:
 
 
 
-            del layer
+            del ngwLayer
         outDataSource.Destroy()
 
 
