@@ -134,6 +134,8 @@ if __name__ == '__main__':
         wfs_result = dict()
         
         for feat in lyr:
+            
+            #create geometry object
             geom = feat.GetGeometryRef()
             if geom is not None:
                 sr = osr.SpatialReference()
@@ -156,6 +158,8 @@ if __name__ == '__main__':
                     mercator_geom = geom
             else:
                 continue
+            
+            #Read wfs fields
                             
             feat_defn = lyr.GetLayerDefn()
             wfs_fields = dict()    
@@ -164,10 +168,12 @@ if __name__ == '__main__':
                 field_defn = feat_defn.GetFieldDefn(i)
                 #if field_defn.GetName() == 'gml_id':
                 #    continue
-                                    
+                
+                #Compare by one control field                     
                 if field_defn.GetName() == check_field:
                     check_field_val = feat.GetFieldAsInteger(i)  #GetFieldAsInteger64(i)
                 
+                #Read fields
                 if field_defn.GetType() == ogr.OFTInteger: #or field_defn.GetType() == ogr.OFTInteger64:
                     wfs_fields[field_defn.GetName()] = feat.GetFieldAsInteger(i) #GetFieldAsInteger64(i)
 #                    print "%s = %d" % (field_defn.GetName(), feat.GetFieldAsInteger64(i))
@@ -181,12 +187,23 @@ if __name__ == '__main__':
 #                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
                     wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
             
+            #Object with keys - as values of one control field
             wfs_result[check_field_val] = dict()        
             wfs_result[check_field_val]['id'] = check_field_val      
             wfs_result[check_field_val]['fields'] = wfs_fields
             wfs_result[check_field_val]['geom'] = mercator_geom.Clone()
             
         # compare wfs_result and ngw_result
+        
+        '''
+        Compare ngw records with wfs
+        if not compare: put to web (update)
+        if ngw result not in wfs: delete from web
+        
+        Compare wfs records with ngw
+        if wfs not in ngw: post to ngw (create)
+        
+        '''
         for ngw_id in ngw_result:
             if ngw_id in wfs_result:
                 if not compareFeatures(ngw_result[ngw_id], wfs_result[ngw_id]):
