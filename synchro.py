@@ -32,6 +32,9 @@ import urllib
 
 import zipfile
 import sys
+import requests
+import pprint
+import json
 
 class OOPTFederate:
     '''project70'''
@@ -40,7 +43,7 @@ class OOPTFederate:
 
 
     #Taken from wfs2ngw.py
-    def compareValues(ngw_value, wfs_value):
+    def compareValues(self,ngw_value, wfs_value):
         if (ngw_value == '' or ngw_value == None) and (wfs_value == '' or wfs_value == None):
             return True
         
@@ -51,58 +54,68 @@ class OOPTFederate:
             return False
         return True
         
-    def comparePoints(ngw_pt, wfs_pt):
+    def comparePoints(self,ngw_pt, wfs_pt):
         return (abs(ngw_pt.GetX() - wfs_pt.GetX()) < delta) and (abs(ngw_pt.GetY() - wfs_pt.GetY()) < delta)
         
     def compareLines(ngw_line, wfs_line):
         if ngw_line.GetPointCount() != wfs_line.GetPointCount():
             return False
         for i in range(ngw_line.GetPointCount()):
-            if not comparePoints(ngw_line.GetPoint(i), wfs_line.GetPoint(i)):
+            if not self.comparePoints(ngw_line.GetPoint(i), wfs_line.GetPoint(i)):
                 return False
             
         return True
         
-    def comparePolygons(ngw_poly, wfs_poly):
+    def comparePolygons(self,ngw_poly, wfs_poly):
         if ngw_poly.GetGeometryCount() != wfs_poly.GetGeometryCount():
             return False
         for i in range(ngw_poly.GetPointCount()):
-            if not comparePoints(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
+            if not self.comparePoints(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
                 return False
 
         return True                 
         
-    def compareGeom(ngw_geom, wfs_geom):    
+    def compareGeom(self,ngw_geom, wfs_geom):    
         if ngw_geom.GetGeometryType() is ogr.wkbPoint:      
-            return comparePoints(ngw_geom, wfs_geom)  
+            return self.comparePoints(ngw_geom, wfs_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbLineString:
-            return compareLines(ngw_geom, wfs_geom)  
+            return self.compareLines(ngw_geom, wfs_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbPolygon:
-            return comparePolygons(ngw_geom, wfs_geom)  
+            return self.comparePolygons(ngw_geom, wfs_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiPoint:
             for i in range(ngw_geom.GetGeometryCount()):
-                if not comparePoint(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                if not self.comparePoint(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
                     return False
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiLineString:
             for i in range(ngw_geom.GetGeometryCount()):
-                if not compareLines(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                if not self.compareLines(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
                     return False
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiPolygon:
             for i in range(ngw_geom.GetGeometryCount()):
-                if not comparePolygons(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                if not self.comparePolygons(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
                     return False
         else:
             return True # this is unexpected
 
         return True     
 
-    def compareFeatures(ngw_feature, wfs_feature):
+    def compareFeatures(self,ngw_feature, wfs_feature):
         # compare attributes
         ngw_fields = ngw_feature['fields']
         wfs_fields = wfs_feature['fields']
         for ngw_field in ngw_fields:
-            if not compareValues(ngw_fields[ngw_field], wfs_fields[ngw_field]):
+            if not self.compareValues(ngw_fields[ngw_field], wfs_fields[ngw_field]):
                 return False
+
+        # compare geom
+        return self.compareGeom(ngw_feature['geom'], wfs_feature['geom'])
+
+    def createPayload(self,wfs_feature):
+        payload = {
+            'geom': wfs_feature['geom'].ExportToWkt(),
+            'fields': wfs_feature['fields']
+        }
+        return payload
 
     #Taken from wfs2ngw.py
 
@@ -132,6 +145,8 @@ class OOPTFederate:
         self.accounts={'ua':{'sources':ua_sources}}
         #self.accounts.ua.sources.push('http://opengeo.intetics.com.ua/osm/pa/data/protected_area_polygon.zip')
         #self.accounts.ua.sources.push('http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip')
+
+        self.ForceToMultiPolygon = False #Не знаю, нужно ли?
 
         
 
@@ -168,7 +183,10 @@ class OOPTFederate:
 
 
         #Create fields in middle data
-        codeField = ogr.FieldDefn("code", ogr.OFTString)
+        codeField = ogr.FieldDefn("src_code", ogr.OFTString)
+        brokerLayer.CreateField(codeField)
+
+        codeField = ogr.FieldDefn("synchronisation_key", ogr.OFTString)
         brokerLayer.CreateField(codeField)
 
         codeField = ogr.FieldDefn("oopt_type", ogr.OFTString)
@@ -247,8 +265,13 @@ class OOPTFederate:
 
 
 
+            srcRecordCounter = 0
             for feature in ExternalLayer:
+                srcRecordCounter = srcRecordCounter+1
                 geom = feature.GetGeometryRef()
+                if self.ForceToMultiPolygon == True:
+                    if geom.GetGeometryType() == ogr.wkbPolygon:
+                        geom = ogr.ForceToMultiPolygon(geom)
 
                 featureDefn = brokerLayer.GetLayerDefn()
                 outfeature = ogr.Feature(featureDefn)
@@ -256,10 +279,14 @@ class OOPTFederate:
 
                 #Add our special field - oopt_type
 
-                outfeature.SetField("code", 'ua')
+                outfeature.SetField("src_code", 'ua')
+                outfeature.SetField("synchronisation_key", 'ua'+str(srcRecordCounter))
                 outfeature.SetField("oopt_type", ooptType)
+
+
                 if feature.GetField("name") != None:
                     outfeature.SetField("name", feature.GetField("name"))
+
                 if (geom.IsValid()):                
                     brokerLayer.CreateFeature(outfeature)
 
@@ -277,7 +304,7 @@ class OOPTFederate:
             #Filter ngw objects by source attribute - using OGR WFS filter 
 
 
-
+            ''' connect to ngw via wfs
             print 'Connecting to our storage NGW via WFS'
             wfs_drv = ogr.GetDriverByName('WFS')
             # Open the webservice
@@ -293,8 +320,146 @@ class OOPTFederate:
             srs = ngwLayer.GetSpatialRef()
             print 'ngwLayer: %s, Features: %s, SR: %s...' % (ngwLayer.GetName(), ngwLayer.GetFeatureCount(), srs.ExportToWkt()[0:250])
             ngwFeatureCount=ngwLayer.GetFeatureCount()
-
             '''
+
+
+        ngw_url = 'http://176.9.38.120/pa/api/resource/'
+        ngw_creds = ('administrator', 'admin')
+        check_field = 'synchronisation_key'
+        resid=12
+
+        # Put NGW records into array   
+        print
+        print ngw_url + str(resid) + '/feature/'
+        req = requests.get(ngw_url + str(resid) + '/feature/', auth=ngw_creds)
+        dictionary = req.json()
+        ngw_result = dict()
+        geom_type = None
+        for item in dictionary:
+                objectid = item['fields'][check_field]
+                ngw_geom = ogr.CreateGeometryFromWkt(item['geom'])
+                if geom_type is None:
+                    geom_type = ngw_geom.GetGeometryType()
+                    
+                ngw_result[objectid] = dict(
+                    id=item['id'],
+                    geom=ngw_geom,
+                    fields=item['fields'],
+                )
+        pp = pprint.PrettyPrinter(indent=4)
+
+
+        # Put broker records into array
+    
+        brokerLayer.ResetReading()
+        
+        wfs_result = dict()
+        
+        for feat in brokerLayer:
+            
+            #create geometry object
+            geom = feat.GetGeometryRef()
+            if geom is not None:
+                sr = osr.SpatialReference()
+                sr.ImportFromEPSG(3857)
+                geom.TransformTo(sr)
+                
+                if geom_type == ogr.wkbLineString:
+                    mercator_geom = ogr.ForceToLineString(geom)
+                elif geom_type == ogr.wkbPolygon:
+                    mercator_geom = ogr.ForceToPolygon(geom)
+                elif geom_type == ogr.wkbPoint:
+                    mercator_geom = ogr.ForceToPoint(geom)
+                elif geom_type == ogr.wkbMultiPolygon:
+                    mercator_geom = ogr.ForceToMultiPolygon(geom)
+                elif geom_type == ogr.wkbMultiPoint:
+                    mercator_geom = ogr.ForceToMultiPoint(geom)
+                elif geom_type == ogr.wkbMultiLineString:
+                    mercator_geom = ogr.ForceToMultiPolygon(geom)
+                else:            
+                    mercator_geom = geom
+            else:
+                continue
+            
+            #Read broker fields
+                            
+            feat_defn = brokerLayer.GetLayerDefn()
+            wfs_fields = dict()    
+            
+            for i in range(feat_defn.GetFieldCount()):
+                field_defn = feat_defn.GetFieldDefn(i)
+                #if field_defn.GetName() == 'gml_id':
+                #    continue
+                
+                #Compare by one control field    
+                                 
+                if field_defn.GetName() == check_field:
+                    check_field_val = feat.GetFieldAsString(i).decode('utf-8')  #GetFieldAsInteger64(i)
+                    
+                
+                #Read fields
+                if field_defn.GetType() == ogr.OFTInteger: #or field_defn.GetType() == ogr.OFTInteger64:
+                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsInteger(i) #GetFieldAsInteger64(i)
+#                    print "%s = %d" % (field_defn.GetName(), feat.GetFieldAsInteger64(i))
+                elif field_defn.GetType() == ogr.OFTReal:
+                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsDouble(i)
+#                    print "%s = %.3f" % (field_defn.GetName(), feat.GetFieldAsDouble(i))
+                elif field_defn.GetType() == ogr.OFTString:
+#                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
+                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
+                else:
+#                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
+                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
+            
+            #Object with keys - as values of one control field
+            wfs_result[check_field_val] = dict()        
+            wfs_result[check_field_val]['id'] = check_field_val      
+            wfs_result[check_field_val]['fields'] = wfs_fields
+            wfs_result[check_field_val]['geom'] = mercator_geom.Clone()
+
+
+
+        # compare wfs_result and ngw_result
+        
+        '''
+        Compare ngw records with wfs
+        if not compare: put to web (update)
+        if ngw result not in wfs: delete from web
+        
+        Compare wfs records with ngw
+        if wfs not in ngw: post to ngw (create)
+        
+        '''
+        #pp.pprint(ngw_result)
+        #quit()
+        for ngw_id in ngw_result:
+            ngwFeatureId=ngw_result[ngw_id]['id']
+            #print ngwFeatureId
+            if ngw_id in wfs_result:
+                if not self.compareFeatures(ngw_result[ngw_id], wfs_result[ngw_id]):
+                    # update ngw feature
+                    print 'update feature #' + str(ngw_id)
+                    payload = self.createPayload(wfs_result[ngw_id])
+                    req = requests.put(ngw_url + str(resid) + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=ngw_creds)
+            else:
+                print 'delete feature #' + str(ngw_id)
+                req = requests.delete(ngw_url + str(resid) + '/feature/' + str(ngwFeatureId), auth=ngw_creds)
+                
+        # add new
+
+        #pp.pprint(wfs_result)
+        #quit()
+        for wfs_id in wfs_result:
+            wfsFeatureId=wfs_result[wfs_id]['id']
+            if wfs_id not in ngw_result:
+                print 'add new feature #' + str(wfs_id)
+                payload = self.createPayload(wfs_result[wfs_id])
+                #print ngw_url + str(resid) + '/feature/'
+                #print payload
+                req = requests.post(ngw_url + str(resid) + '/feature/', data=json.dumps(payload), auth=ngw_creds)
+
+        quit()
+        '''
     Сверяем записи локальные c вебом по атрибутам и по геометрии
         одинаковы - пропускаем
         не одинаковы - удалить и залить этот
@@ -303,15 +468,15 @@ class OOPTFederate:
         есть в вебе, нет в локальном - удалилось в локальном - удалить на сервере
             '''
 
-            #re-open middle layer
-            #brokerLayer = outDataSource.GetLayer() #и вот тут ничего не делается
-            brokerLayer.ResetReading()
-            brokerFeatureCount=brokerLayer.GetFeatureCount()
+        #re-open middle layer
+        #brokerLayer = outDataSource.GetLayer() #и вот тут ничего не делается
+        brokerLayer.ResetReading()
+        brokerFeatureCount=brokerLayer.GetFeatureCount()
     
 
 
-            #print 'ngwLayer: %s, Features: %s, SR: %s...' % (brokerLayer.GetName(), brokerLayer.GetFeatureCount(), brokerLayer.GetSpatialRef().ExportToWkt())
-            for o in xrange(0,brokerFeatureCount):
+        #print 'ngwLayer: %s, Features: %s, SR: %s...' % (brokerLayer.GetName(), brokerLayer.GetFeatureCount(), brokerLayer.GetSpatialRef().ExportToWkt())
+        for o in xrange(0,brokerFeatureCount):
                 brokerFeature=brokerLayer.GetNextFeature()
                 print 'broker&& %s '% (brokerFeature.GetField("name"))
                 # iterate over features wfs
@@ -332,21 +497,21 @@ class OOPTFederate:
 
             
             #clear unzip dir
-            WipeDir=False
-            if (WipeDir==False):
+        WipeDir=False
+        if (WipeDir==False):
                 filelist = [ f for f in os.listdir(UnzipFolder) ]
                 for f in filelist:
                     #print 'remove'+f
                     os.remove(os.path.join(UnzipFolder,f))
             #quit()
 
-            dataSource.Destroy()
+        dataSource.Destroy()
 
 
 
 
 
-            del ngwLayer
+        del ngwLayer
         outDataSource.Destroy()
 
 
