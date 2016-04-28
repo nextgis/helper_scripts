@@ -7,23 +7,20 @@
 
 
 '''
-Для каждого сервера
-    Выкачиваем всё с сервера
-    Сливаем всё в один слой (geojson или memory)
-    Выкачиваем из веба всё по этому источнику.
-    Сверяем записи локальные и в вебе по атрибутам и по геометрии
-        одинаковы - пропускаем
-        не одинаковы - удалить и залить этот
-        остались несравненные локальные запипи - появилось в локальном - залить этот  
-    Сверяем записи в вебе и локальные:     
-        есть в вебе, нет в локальном - удалилось в локальном - удалить на сервере
+
+Скрипт, который синхронизирует геоданные по ООПТ от нескольких источников в инстансе NGW.
+
+Пока работает только с 
+НЕЦУ, Исследовательско-образовательная лаборатория OSGeo КНУ и др. -- OSM - http://opengeo.intetics.com.ua/osm/pa/ - Oleg Seliverstov
 
 
 
+mkdir tmp
+mkdir tmpm
 '''
 
 import os
-import tempfile
+
 
 from osgeo import ogr, gdal
 from osgeo import osr
@@ -141,21 +138,22 @@ class OOPTFederate:
 
     def __init__(self):
 
-        
-        ua_sources=['http://opengeo.intetics.com.ua/osm/pa/data/protected_area_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/nature_reserve_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/ramsar_sites_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/park_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/nature_conservation_polygon.zip',
-
-
-]
         ua_sources=[                    'http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip',
 
 
 
 ]
+        
+        ua_sources=['http://opengeo.intetics.com.ua/osm/pa/data/protected_area_polygon.zip',
+                    'http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip',
+                    'http://opengeo.intetics.com.ua/osm/pa/data/nature_reserve_polygon.zip',
+                    'http://opengeo.intetics.com.ua/osm/pa/data/ramsar_sites_polygon.zip',
+                    #'http://opengeo.intetics.com.ua/osm/pa/data/park_polygon.zip',
+                    'http://opengeo.intetics.com.ua/osm/pa/data/nature_conservation_polygon.zip',
+
+
+]
+
 
         #self.accounts='1'
         self.accounts={'ua':{'sources':ua_sources}}
@@ -175,13 +173,11 @@ class OOPTFederate:
     def synchro_ua(self):
 
     
-        def DownloadAndUnzip(url):
-            tempZipFile = tempfile.NamedTemporaryFile(prefix='report_', suffix='.zip', dir='/tmp', delete=True)
-
-            urllib.urlretrieve (url, tempZipFile.name)
-
-
-            UnzipFolder='tmpm'
+        def DownloadAndUnzip(url,UnzipFolder):
+            #tempZipFile = tempfile.NamedTemporaryFile(prefix='report_', suffix='.zip', dir='/tmp', delete=True)
+            tempZipFile='tmp/tmp.zip'
+            urllib.urlretrieve (url, tempZipFile)
+            #UnzipFolder='tmpm'
 
             #Unzip to shapefile
 
@@ -192,7 +188,20 @@ class OOPTFederate:
                 if file.endswith(".shp"):
                     shpFileName=os.path.join(UnzipFolder,file)
 
+            os.remove(os.path.join(tempZipFile))          
+
+
+
+            print 'returning shape '+  shpFileName
             return shpFileName
+
+        def CleanDir(UnzipFolder):
+            WipeDir=True
+            if (WipeDir==True):
+                filelist = [ f for f in os.listdir(UnzipFolder) ]
+                for f in filelist:
+                    os.remove(os.path.join(UnzipFolder,f))
+    
 
 
 
@@ -237,8 +246,16 @@ class OOPTFederate:
 
         #Download each zip
         for url in self.accounts['ua']['sources']:
+            print
 
-            shpFileName = DownloadAndUnzip(url)
+            UnzipFolder='tmpm'
+            CleanDir(UnzipFolder)
+
+            print 'retrive '+url
+            shpFileName = ''
+            shpFileName = DownloadAndUnzip(url,UnzipFolder)
+            print 'shpfilename'+shpFileName
+            
             #shpFileName = 'tmpm/protected_area_polygon.shp'
 
             #Open each Shapefile
@@ -318,7 +335,11 @@ class OOPTFederate:
 
             #brokerLayer = None
 
-            
+            WipeDir=True
+            if (WipeDir==False):
+                filelist = [ f for f in os.listdir(UnzipFolder) ]
+                for f in filelist:
+                    os.remove(os.path.join(UnzipFolder,f))
             
 
            
