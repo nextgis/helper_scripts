@@ -37,7 +37,7 @@ def compareValues(ngw_value, wfs_value):
     return True
     
 def comparePoints(ngw_pt, wfs_pt):
-    return (abs(ngw_pt.GetX() - wfs_pt.GetX()) < delta) and (abs(ngw_pt.GetY() - wfs_pt.GetY()) < delta)
+    return (abs(ngw_pt[0] - wfs_pt[0]) < delta) and (abs(ngw_pt[1] - wfs_pt[1]) < delta)
     
 def compareLines(ngw_line, wfs_line):
     if ngw_line.GetPointCount() != wfs_line.GetPointCount():
@@ -51,8 +51,8 @@ def compareLines(ngw_line, wfs_line):
 def comparePolygons(ngw_poly, wfs_poly):
     if ngw_poly.GetGeometryCount() != wfs_poly.GetGeometryCount():
         return False
-    for i in range(ngw_poly.GetPointCount()):
-        if not comparePoints(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
+    for i in range(ngw_poly.GetGeometryCount()):
+        if not compareLines(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
             return False
 
     return True                 
