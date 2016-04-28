@@ -55,28 +55,43 @@ class OOPTFederate:
         return True
         
     def comparePoints(self,ngw_pt, wfs_pt):
-        return (abs(ngw_pt.GetX() - wfs_pt.GetX()) < delta) and (abs(ngw_pt.GetY() - wfs_pt.GetY()) < delta)
+        return (abs(ngw_pt[0] - wfs_pt[0]) < self.delta) and (abs(ngw_pt[1] - wfs_pt[1]) < self.delta)
         
-    def compareLines(ngw_line, wfs_line):
+    def compareLines(self,ngw_line, wfs_line):
         if ngw_line.GetPointCount() != wfs_line.GetPointCount():
             return False
         for i in range(ngw_line.GetPointCount()):
+
             if not self.comparePoints(ngw_line.GetPoint(i), wfs_line.GetPoint(i)):
                 return False
             
         return True
         
     def comparePolygons(self,ngw_poly, wfs_poly):
-        if ngw_poly.GetGeometryCount() != wfs_poly.GetGeometryCount():
+        ngw_poly_rings = ngw_poly.GetGeometryCount()
+        wfs_poly_rings = wfs_poly.GetGeometryCount()
+        if ngw_poly_rings != wfs_poly_rings:
             return False
+
+        for i in range(ngw_poly_rings):
+            if not self.compareLines(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
+                return False 
+
+
+
+
+
         for i in range(ngw_poly.GetPointCount()):
             if not self.comparePoints(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
                 return False
 
         return True                 
         
-    def compareGeom(self,ngw_geom, wfs_geom):    
-        if ngw_geom.GetGeometryType() is ogr.wkbPoint:      
+    def compareGeom(self,ngw_geom, wfs_geom):  
+  
+        if ngw_geom.GetGeometryCount() <> wfs_geom.GetGeometryCount():
+            return False    #Diffirent geometry count
+        elif ngw_geom.GetGeometryType() is ogr.wkbPoint:      
             return self.comparePoints(ngw_geom, wfs_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbLineString:
             return self.compareLines(ngw_geom, wfs_geom)  
@@ -95,6 +110,7 @@ class OOPTFederate:
                 if not self.comparePolygons(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
                     return False
         else:
+
             return True # this is unexpected
 
         return True     
@@ -106,9 +122,9 @@ class OOPTFederate:
         for ngw_field in ngw_fields:
             if not self.compareValues(ngw_fields[ngw_field], wfs_fields[ngw_field]):
                 return False
-
         # compare geom
-        return self.compareGeom(ngw_feature['geom'], wfs_feature['geom'])
+        data=self.compareGeom(ngw_feature['geom'], wfs_feature['geom'])
+        return data
 
     def createPayload(self,wfs_feature):
         payload = {
@@ -147,6 +163,7 @@ class OOPTFederate:
         #self.accounts.ua.sources.push('http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip')
 
         self.ForceToMultiPolygon = False #Не знаю, нужно ли?
+        self.delta = 0.00000001 #Using in compare points 
 
         
 
@@ -156,6 +173,29 @@ class OOPTFederate:
 
 
     def synchro_ua(self):
+
+    
+        def DownloadAndUnzip(url):
+            tempZipFile = tempfile.NamedTemporaryFile(prefix='report_', suffix='.zip', dir='/tmp', delete=True)
+
+            urllib.urlretrieve (url, tempZipFile.name)
+
+
+            UnzipFolder='tmpm'
+
+            #Unzip to shapefile
+
+            with zipfile.ZipFile(tempZipFile, "r") as z:
+                z.extractall(UnzipFolder)
+
+            for file in os.listdir(UnzipFolder):
+                if file.endswith(".shp"):
+                    shpFileName=os.path.join(UnzipFolder,file)
+
+            return shpFileName
+
+
+
         print 'synchro_ua'
         #print self.accounts
         #print self.accounts['ua']['sources']
@@ -198,24 +238,10 @@ class OOPTFederate:
         #Download each zip
         for url in self.accounts['ua']['sources']:
 
-            tempZipFile = tempfile.NamedTemporaryFile(prefix='report_', suffix='.zip', dir='/tmp', delete=True)
-            print 'download ' + url
-            urllib.urlretrieve (url, tempZipFile.name)
-            print 'saved to '+tempZipFile.name
+            shpFileName = DownloadAndUnzip(url)
+            #shpFileName = 'tmpm/protected_area_polygon.shp'
 
-            UnzipFolder='tmpm'
-
-            with zipfile.ZipFile(tempZipFile, "r") as z:
-                z.extractall(UnzipFolder)
-
-            for file in os.listdir(UnzipFolder):
-                if file.endswith(".shp"):
-                    shpFileName=os.path.join(UnzipFolder,file)
-            print shpFileName
-
-           
-
-            #Open each zip
+            #Open each Shapefile
     
             driver = ogr.GetDriverByName('ESRI Shapefile')
             dataSource = driver.Open(shpFileName, 0) # 0 means read-only. 1 means writeable.
@@ -303,34 +329,13 @@ class OOPTFederate:
             #Make ogr object - wfs connection to ngw - Get WFS layers and iterate over features
             #Filter ngw objects by source attribute - using OGR WFS filter 
 
-
-            ''' connect to ngw via wfs
-            print 'Connecting to our storage NGW via WFS'
-            wfs_drv = ogr.GetDriverByName('WFS')
-            # Open the webservice
-            url = 'http://176.9.38.120/pa'+'/api/resource/10/wfs'
-            wfsLayerName='main'
-            wfs_ds = wfs_drv.Open('WFS:' + url)
-            if not wfs_ds:
-                sys.exit('ERROR: can not open WFS datasource')
-            else:
-                pass
-            ngwLayer = wfs_ds.GetLayerByName(wfsLayerName)
-            ngwLayer.SetAttributeFilter("code = 'UA'")
-            srs = ngwLayer.GetSpatialRef()
-            print 'ngwLayer: %s, Features: %s, SR: %s...' % (ngwLayer.GetName(), ngwLayer.GetFeatureCount(), srs.ExportToWkt()[0:250])
-            ngwFeatureCount=ngwLayer.GetFeatureCount()
-            '''
-
-
         ngw_url = 'http://176.9.38.120/pa/api/resource/'
         ngw_creds = ('administrator', 'admin')
         check_field = 'synchronisation_key'
         resid=12
 
         # Put NGW records into array   
-        print
-        print ngw_url + str(resid) + '/feature/'
+
         req = requests.get(ngw_url + str(resid) + '/feature/', auth=ngw_creds)
         dictionary = req.json()
         ngw_result = dict()
@@ -350,11 +355,8 @@ class OOPTFederate:
 
 
         # Put broker records into array
-    
         brokerLayer.ResetReading()
-        
         wfs_result = dict()
-        
         for feat in brokerLayer:
             
             #create geometry object
@@ -430,11 +432,11 @@ class OOPTFederate:
         if wfs not in ngw: post to ngw (create)
         
         '''
-        #pp.pprint(ngw_result)
-        #quit()
+
+
         for ngw_id in ngw_result:
             ngwFeatureId=ngw_result[ngw_id]['id']
-            #print ngwFeatureId
+
             if ngw_id in wfs_result:
                 if not self.compareFeatures(ngw_result[ngw_id], wfs_result[ngw_id]):
                     # update ngw feature
@@ -446,16 +448,12 @@ class OOPTFederate:
                 req = requests.delete(ngw_url + str(resid) + '/feature/' + str(ngwFeatureId), auth=ngw_creds)
                 
         # add new
-
-        #pp.pprint(wfs_result)
-        #quit()
         for wfs_id in wfs_result:
             wfsFeatureId=wfs_result[wfs_id]['id']
             if wfs_id not in ngw_result:
                 print 'add new feature #' + str(wfs_id)
                 payload = self.createPayload(wfs_result[wfs_id])
-                #print ngw_url + str(resid) + '/feature/'
-                #print payload
+
                 req = requests.post(ngw_url + str(resid) + '/feature/', data=json.dumps(payload), auth=ngw_creds)
 
         quit()
@@ -478,7 +476,7 @@ class OOPTFederate:
         #print 'ngwLayer: %s, Features: %s, SR: %s...' % (brokerLayer.GetName(), brokerLayer.GetFeatureCount(), brokerLayer.GetSpatialRef().ExportToWkt())
         for o in xrange(0,brokerFeatureCount):
                 brokerFeature=brokerLayer.GetNextFeature()
-                print 'broker&& %s '% (brokerFeature.GetField("name"))
+
                 # iterate over features wfs
                 ngwLayer.ResetReading()
                 for x in xrange(0, ngwFeatureCount):
@@ -501,9 +499,9 @@ class OOPTFederate:
         if (WipeDir==False):
                 filelist = [ f for f in os.listdir(UnzipFolder) ]
                 for f in filelist:
-                    #print 'remove'+f
+
                     os.remove(os.path.join(UnzipFolder,f))
-            #quit()
+
 
         dataSource.Destroy()
 
@@ -517,22 +515,5 @@ class OOPTFederate:
 
 
 processor=OOPTFederate()
-#processor.download_ngw_snapshot()
 processor.synchro_ua()
 
-
-
-
-
-
- 
-
- 
-#temp = tempfile.NamedTemporaryFile(prefix='report_', suffix='.html', dir='/tmp', delete=True)
- 
-#zip_file = temp.name
-#(dirName, fileName) = os.path.split(zip_file)
-#fileBaseName = os.path.splitext(fileName)[0]
-#pdf_file = dirName + '/' + fileBaseName + '.pdf'
- 
-#print html_file
