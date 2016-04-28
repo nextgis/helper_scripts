@@ -59,7 +59,7 @@ def comparePolygons(ngw_poly, wfs_poly):
     
 def compareGeom(ngw_geom, wfs_geom):    
     if ngw_geom.GetGeometryCount() <> wfs_geom.GetGeometryCount():
-    return False    #Diffirent geometry count
+        return False    #Diffirent geometry count
     elif ngw_geom.GetGeometryType() is ogr.wkbPoint:      
         return comparePoints(ngw_geom, wfs_geom)  
     elif ngw_geom.GetGeometryType() is ogr.wkbLineString:
