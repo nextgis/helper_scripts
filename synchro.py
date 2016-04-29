@@ -438,34 +438,7 @@ class OOPTFederate:
 
     def GetExternalDataProzrachnyiMir(self,check_field):
 
-        def DownloadAndUnzip(url,UnzipFolder):
-            #tempZipFile = tempfile.NamedTemporaryFile(prefix='report_', suffix='.zip', dir='/tmp', delete=True)
-            tempZipFile='tmp/tmp.zip'
-            urllib.urlretrieve (url, tempZipFile)
-            #UnzipFolder='tmpm'
 
-            #Unzip to shapefile
-
-            with zipfile.ZipFile(tempZipFile, "r") as z:
-                z.extractall(UnzipFolder)
-
-            for file in os.listdir(UnzipFolder):
-                if file.endswith(".shp"):
-                    shpFileName=os.path.join(UnzipFolder,file)
-
-            os.remove(os.path.join(tempZipFile))          
-
-
-
-            print 'returning shape '+  shpFileName
-            return shpFileName
-
-        def CleanDir(UnzipFolder):
-            WipeDir=True
-            if (WipeDir==True):
-                filelist = [ f for f in os.listdir(UnzipFolder) ]
-                for f in filelist:
-                    os.remove(os.path.join(UnzipFolder,f))
     
 
 
@@ -479,8 +452,8 @@ class OOPTFederate:
         brokerLayer        - processed data from external provider in our format with our fields
         ngwLayer        - layer in ngw
         '''
-
-
+    
+        wfs_url='http://213.189.208.206:6080/arcgis/services/single/Federal_protected_areas/MapServer/WFSServer'
         ds = ogr.Open('WFS:' + wfs_url)
         if ds is None:
             print 'did not managed to open WFS datastore'
@@ -513,7 +486,7 @@ class OOPTFederate:
 
         #Download each zip
         srcRecordCounter = 0
-        for resid, name in (zip(ngw_resources, wfs_names)):	
+        for  name in  wfs_names:	
             print "Proceed " + name + " ..."
 
             ExternalLayer = ds.GetLayerByName(name)	
@@ -523,8 +496,7 @@ class OOPTFederate:
                 srcRecordCounter = srcRecordCounter+1
                 geom = feature.GetGeometryRef()
                 if self.ForceToMultiPolygon == True:
-                    if geom.GetGeometryType() == ogr.wkbPolygon:
-                        geom = ogr.ForceToMultiPolygon(geom)
+                    geom = ogr.ForceToMultiPolygon(geom)
 
                 featureDefn = brokerLayer.GetLayerDefn()
                 outfeature = ogr.Feature(featureDefn)
@@ -537,7 +509,7 @@ class OOPTFederate:
                 outfeature.SetField("oopt_type", feature.GetField("Type_ru"))
 
 
-                if feature.GetField("name") != None:
+                if feature.GetField("Name_ru") != None:
                     outfeature.SetField("name", feature.GetField("Name_ru"))
 
                 if (geom.IsValid()):                
@@ -643,16 +615,12 @@ class OOPTFederate:
                     geom_type = ngw_geom.GetGeometryType()
 
                 #filter here
-
-
-
-
-                    
-                ngw_result[objectid] = dict(
-                    id=item['id'],
-                    geom=ngw_geom,
-                    fields=item['fields'],
-                )
+                if (code==item['fields']['src_code']):
+                    ngw_result[objectid] = dict(
+                        id=item['id'],
+                        geom=ngw_geom,
+                        fields=item['fields'],
+                    )
                 #sort here
         ngw_result_sorted = dict()
         for key in sorted(ngw_result):
@@ -701,10 +669,7 @@ class OOPTFederate:
             if wfs_id not in ngw_result:
                 print 'add new feature #' + str(wfs_id)
                 payload = self.createPayload(wfs_result[wfs_id])
-
-                print self.ngw_url + str(self.resid) + '/feature/'
                 #print json.dumps(payload)
-                #print self.ngw_creds
                 req = requests.post(self.ngw_url + str(self.resid) + '/feature/', data=json.dumps(payload), auth=self.ngw_creds)
 
     
@@ -716,14 +681,15 @@ class OOPTFederate:
 
 
 processor=OOPTFederate()
+'''
 externalData=processor.GetExternalDataUA(check_field = 'synchronisation_key')
 print 'fetch ngw data'
 ngwData=processor.GetNGWData('ua',check_field = 'synchronisation_key')
 print 'start sinchronisation'
-
-
-
 processor.synchronize(externalData,ngwData,'ua',check_field = 'synchronisation_key')
-#processor.synchro_ua()
-
-
+'''
+externalData=processor.GetExternalDataProzrachnyiMir(check_field = 'synchronisation_key')
+print 'fetch ngw data'
+ngwData=processor.GetNGWData('pa',check_field = 'synchronisation_key')
+print 'start sinchronisation'
+processor.synchronize(externalData,ngwData,'pa',check_field = 'synchronisation_key')
