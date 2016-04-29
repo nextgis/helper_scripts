@@ -160,7 +160,7 @@ class OOPTFederate:
         #self.accounts.ua.sources.push('http://opengeo.intetics.com.ua/osm/pa/data/protected_area_polygon.zip')
         #self.accounts.ua.sources.push('http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip')
 
-        self.ForceToMultiPolygon = False #Не знаю, нужно ли?
+        self.ForceToMultiPolygon = True #Не знаю, нужно ли?
         self.delta = 0.00000001 #Using in compare points 
         self.ngw_url = 'http://176.9.38.120/pa/api/resource/'
         self.resid=12
@@ -436,7 +436,7 @@ class OOPTFederate:
 
 
 
-def GetExternalDataProzrachnyiMir(self,check_field):
+    def GetExternalDataProzrachnyiMir(self,check_field):
 
         def DownloadAndUnzip(url,UnzipFolder):
             #tempZipFile = tempfile.NamedTemporaryFile(prefix='report_', suffix='.zip', dir='/tmp', delete=True)
@@ -481,18 +481,20 @@ def GetExternalDataProzrachnyiMir(self,check_field):
         '''
 
 
-        tmpMiddeShape=os.path.join('tmp','ua-middle'+'.geojson')
-        tmpWebSnapshot=os.path.join('tmp','websnapshotUA'+'.geojson')
+        ds = ogr.Open('WFS:' + wfs_url)
+        if ds is None:
+            print 'did not managed to open WFS datastore'
+            exit()
+
+
 
         #Login to WFS here
-        gdal.SetConfigOption('GDAL_HTTP_USERPWD', 'administrator:admin')
 
-        tmpMiddleFilename = tmpMiddeShape
-        outDriver = ogr.GetDriverByName("GeoJSON")
-        if os.path.exists(tmpMiddleFilename):
-            outDriver.DeleteDataSource(tmpMiddleFilename)
-        #outDataSource = outDriver.CreateDataSource(tmpMiddleFilename)
-        outDataSource = ogr.GetDriverByName( 'Memory' ).CreateDataSource(tmpMiddleFilename)
+
+  
+
+        wfs_names = ('Protected_Areas__federal__3',)
+        outDataSource = ogr.GetDriverByName( 'Memory' ).CreateDataSource(os.path.join('tmp','pm'+'.geojson'))
         brokerLayer = outDataSource.CreateLayer("Processed data from external provider in our format with our fields", geom_type=ogr.wkbMultiPolygon)
 
 
@@ -511,70 +513,12 @@ def GetExternalDataProzrachnyiMir(self,check_field):
 
         #Download each zip
         srcRecordCounter = 0
-        for url in self.accounts['ua']['sources']:
-            print
+        for resid, name in (zip(ngw_resources, wfs_names)):	
+            print "Proceed " + name + " ..."
 
-            UnzipFolder='tmpm'
-            CleanDir(UnzipFolder)
+            ExternalLayer = ds.GetLayerByName(name)	
+            ExternalLayer.ResetReading()
 
-            print 'retrive '+url
-            shpFileName = ''
-            shpFileName = DownloadAndUnzip(url,UnzipFolder)
-            print 'shpfilename'+shpFileName
-            
-            #shpFileName = 'tmpm/protected_area_polygon.shp'
-
-            #Open each Shapefile
-    
-            driver = ogr.GetDriverByName('ESRI Shapefile')
-            dataSource = driver.Open(shpFileName, 0) # 0 means read-only. 1 means writeable.
-
-            # Check to see if shapefile is found.
-            if dataSource is None:
-                print 'Could not open %s' % (shpFileName)
-            else:
-                print 'Opened %s' % (shpFileName)
-                ExternalLayer = dataSource.GetLayer()
-                featureCount = ExternalLayer.GetFeatureCount()
-                print "Number of features in %s: %d" % (os.path.basename(shpFileName),featureCount)
-
-            #does external data valid?
-            if (featureCount < 1):
-                print "Number of features in %s: %d" % (os.path.basename(shpFileName),featureCount)
-                return 1 
-
-            #change_attrs
-            #create new layer
-
-
-            '''
-            #deprecated generation of prj
-            srcSpatialRef = layer.GetSpatialRef()
-            print srcSpatialRef.ExportToWkt()
-            srcSpatialRef.MorphToESRI()
-            file = open(os.path.join('tmp',os.path.splitext(os.path.basename(shpFileName))[0]+'.prj'), 'w')
-            file.write(srcSpatialRef.ExportToWkt())
-            file.close()
-            '''
-
-            #Read data from shp
-
-            if ('protected_area' in url): 
-                ooptType='protected_area'
-            if ('national_park' in url): 
-                ooptType='national_park'
-            if ('nature_reserve' in url): 
-                ooptType='nature_reserve'
-            if ('ramsar_site' in url): 
-                ooptType='ramsar_site'
-            if ('park_polygon' in url): 
-                ooptType='park_polygon'
-            if ('nature_conservation' in url): 
-                ooptType='nature_conservation'
-
-
-
-            
             for feature in ExternalLayer:
                 srcRecordCounter = srcRecordCounter+1
                 geom = feature.GetGeometryRef()
@@ -588,38 +532,19 @@ def GetExternalDataProzrachnyiMir(self,check_field):
 
                 #Add our special field - oopt_type
 
-                outfeature.SetField("src_code", 'ua')
-                outfeature.SetField("synchronisation_key", 'ua'+str(srcRecordCounter))
-                outfeature.SetField("oopt_type", ooptType)
+                outfeature.SetField("src_code", 'pm')
+                outfeature.SetField("synchronisation_key", 'pm'+str(srcRecordCounter))
+                outfeature.SetField("oopt_type", feature.GetField("Type_ru"))
 
 
                 if feature.GetField("name") != None:
-                    outfeature.SetField("name", feature.GetField("name"))
+                    outfeature.SetField("name", feature.GetField("Name_ru"))
 
                 if (geom.IsValid()):                
                     brokerLayer.CreateFeature(outfeature)
 
-            #brokerLayer = None
 
-            WipeDir=True
-            if (WipeDir==False):
-                filelist = [ f for f in os.listdir(UnzipFolder) ]
-                for f in filelist:
-                    os.remove(os.path.join(UnzipFolder,f))
-            
-
-           
-            #Now we have ogr layer with all data from one server with our fields
-
-            #Выкачиваем из веба всё по этому источнику.
-
-            #Make ogr object - wfs connection to ngw - Get WFS layers and iterate over features
-            #Filter ngw objects by source attribute - using OGR WFS filter 
-
-
-
-
-
+        #todo: put to separate method
         # Put broker records into array
         brokerLayer.ResetReading()
         wfs_result = dict()
@@ -720,6 +645,8 @@ def GetExternalDataProzrachnyiMir(self,check_field):
                 #filter here
 
 
+
+
                     
                 ngw_result[objectid] = dict(
                     id=item['id'],
@@ -727,9 +654,9 @@ def GetExternalDataProzrachnyiMir(self,check_field):
                     fields=item['fields'],
                 )
                 #sort here
-                ngw_result_sorted = dict()
-                for key in sorted(ngw_result):
-                    ngw_result_sorted[key]=ngw_result[key]
+        ngw_result_sorted = dict()
+        for key in sorted(ngw_result):
+            ngw_result_sorted[key]=ngw_result[key]
 
  
 
@@ -775,6 +702,9 @@ def GetExternalDataProzrachnyiMir(self,check_field):
                 print 'add new feature #' + str(wfs_id)
                 payload = self.createPayload(wfs_result[wfs_id])
 
+                print self.ngw_url + str(self.resid) + '/feature/'
+                #print json.dumps(payload)
+                #print self.ngw_creds
                 req = requests.post(self.ngw_url + str(self.resid) + '/feature/', data=json.dumps(payload), auth=self.ngw_creds)
 
     
