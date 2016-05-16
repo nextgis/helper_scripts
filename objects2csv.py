@@ -2,15 +2,13 @@
 # -*- coding: utf-8 -*-
 
 '''
+We have list of resources groups in NextGIS Web.
+Script generate csv with names and id-s of vector layers.
 
 Имеется NGW. В ней лежат группы ресурсов, в группах - слои.
 Имеется набор id-шников групп ресурсов.
-Нужно получить csv-файл с называнием векторных слоёв и их id
+Нужно получить csv-файл с называнием векторных слоёв и их id.
 '''
-
-
-
-
 
 #делаем штуки для подключения к ngw
 from __future__ import unicode_literals
