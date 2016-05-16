@@ -1,5 +1,15 @@
 # -*- coding: utf-8 -*-
 
+'''
+Script walks through group in NextGIS Web
+If vector layer dows not have mapserver style - create new mapserver style, with random color and layer's geometry type.
+Creating WMS-service with all mapserver styles from this group.
+
+Скрипт проходит по заданной группе в инстансе NextGIS Web
+Если у слоя нет стиля - добавляет ему стиль со случайными цветами, в зависимости от его типа геометрии.
+Записывает все стили
+Создаёт WMS-сервис со всеми стилями из этой группы.
+'''
 
 #создаёт в группе ресурсов wfs-сервис со всеми слоями
 from __future__ import unicode_literals
