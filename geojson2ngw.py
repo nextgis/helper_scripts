@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+'''
+Upload all geojson from folder into NextGISWeb as new layers, and create of simple mapserver style
+
+Usage: geojson2ngw.py foldername
+'''
 from __future__ import unicode_literals
 import os
 
