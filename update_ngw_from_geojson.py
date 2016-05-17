@@ -9,12 +9,11 @@
 '''
 
 Update a vector layer in NextGIS Web from local geojson file
+Before frist run you should create a layer from this file
+Allow deleting, updating and creating features.
+Records compared by values and geometry, so only updated records are transferred. 
 
 
-
-
-mkdir tmp
-mkdir tmpm
 '''
 
 import os
@@ -31,7 +30,7 @@ import requests
 import pprint
 import json
 
-class OOPTFederate:
+class NGWSynchroniser:
 
 
     accounts = {}
@@ -154,8 +153,6 @@ class OOPTFederate:
 
     def openGeoJson(self,check_field, filename):
 
-
-        #filename='routes_with_refs.geojson'
 
 
         driver = ogr.GetDriverByName("GeoJSON")
@@ -336,7 +333,7 @@ class OOPTFederate:
 
 
 
-processor=OOPTFederate()
+processor=NGWSynchroniser()
 
 externalData=processor.openGeoJson(check_field = 'road_id',filename='routes_with_refs.geojson')
 print 'fetch ngw data'
