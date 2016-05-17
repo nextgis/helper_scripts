@@ -8,8 +8,7 @@
 
 '''
 
-Update a one layer in NextGIS Web from local geojson file.
-Before frist run you should create a layer from this file.
+Update a vector layer in NextGIS Web from local geojson file
 
 
 
@@ -33,9 +32,22 @@ import pprint
 import json
 
 class OOPTFederate:
-    '''project70'''
+
 
     accounts = {}
+
+
+    def __init__(self):
+
+        self.ForceToMultiPolygon = True #Не знаю, нужно ли?
+        self.delta = 0.00000001 #Using in compare points 
+        self.ngw_url = 'http://trolleway.nextgis.com/api/resource/'
+        self.resid=6
+        self.ngw_creds = ('administrator', 's8q9MKWk')
+
+        
+
+
 
 
     #Taken from wfs2ngw.py
@@ -137,457 +149,6 @@ class OOPTFederate:
     #Taken from wfs2ngw.py
 
 
-
-
-
-    def __init__(self):
-
-        ua_sources=[                    'http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip',
-
-
-
-]
-        
-        ua_sources=['http://opengeo.intetics.com.ua/osm/pa/data/protected_area_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/nature_reserve_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/ramsar_sites_polygon.zip',
-                    #'http://opengeo.intetics.com.ua/osm/pa/data/park_polygon.zip',
-                    'http://opengeo.intetics.com.ua/osm/pa/data/nature_conservation_polygon.zip',
-
-
-]
-
-
-        #self.accounts='1'
-        self.accounts={'ua':{'sources':ua_sources}}
-        #self.accounts.ua.sources.push('http://opengeo.intetics.com.ua/osm/pa/data/protected_area_polygon.zip')
-        #self.accounts.ua.sources.push('http://opengeo.intetics.com.ua/osm/pa/data/national_park_polygon.zip')
-
-        self.ForceToMultiPolygon = True #Не знаю, нужно ли?
-        self.delta = 0.00000001 #Using in compare points 
-        self.ngw_url = 'http://trolleway.nextgis.com/api/resource/'
-        self.resid=6
-        self.ngw_creds = ('administrator', 's8q9MKWk')
-
-        
-
-    def download_ngw_snapshot(self):
-        ngwUrl='http://176.9.38.120/pa/resource/7'
-        pass
-
-
-    def GetExternalDataUA(self,check_field):
-
-        def DownloadAndUnzip(url,UnzipFolder):
-            #tempZipFile = tempfile.NamedTemporaryFile(prefix='report_', suffix='.zip', dir='/tmp', delete=True)
-            tempZipFile='tmp/tmp.zip'
-            urllib.urlretrieve (url, tempZipFile)
-            #UnzipFolder='tmpm'
-
-            #Unzip to shapefile
-
-            with zipfile.ZipFile(tempZipFile, "r") as z:
-                z.extractall(UnzipFolder)
-
-            for file in os.listdir(UnzipFolder):
-                if file.endswith(".shp"):
-                    shpFileName=os.path.join(UnzipFolder,file)
-
-            os.remove(os.path.join(tempZipFile))          
-
-
-
-            print 'returning shape '+  shpFileName
-            return shpFileName
-
-        def CleanDir(UnzipFolder):
-            WipeDir=True
-            if (WipeDir==True):
-                filelist = [ f for f in os.listdir(UnzipFolder) ]
-                for f in filelist:
-                    os.remove(os.path.join(UnzipFolder,f))
-    
-
-
-
-        print 'synchro_ua'
-        #print self.accounts
-        #print self.accounts['ua']['sources']
-
-        '''
-        ExternalLayer   - raw data from external provider
-        brokerLayer        - processed data from external provider in our format with our fields
-        ngwLayer        - layer in ngw
-        '''
-
-
-        tmpMiddeShape=os.path.join('tmp','ua-middle'+'.geojson')
-        tmpWebSnapshot=os.path.join('tmp','websnapshotUA'+'.geojson')
-
-        #Login to WFS here
-        gdal.SetConfigOption('GDAL_HTTP_USERPWD', 'administrator:admin')
-
-        tmpMiddleFilename = tmpMiddeShape
-        outDriver = ogr.GetDriverByName("GeoJSON")
-        if os.path.exists(tmpMiddleFilename):
-            outDriver.DeleteDataSource(tmpMiddleFilename)
-        #outDataSource = outDriver.CreateDataSource(tmpMiddleFilename)
-        outDataSource = ogr.GetDriverByName( 'Memory' ).CreateDataSource(tmpMiddleFilename)
-        brokerLayer = outDataSource.CreateLayer("Processed data from external provider in our format with our fields", geom_type=ogr.wkbMultiPolygon)
-
-
-        #Create fields in middle data
-        codeField = ogr.FieldDefn("src_code", ogr.OFTString)
-        brokerLayer.CreateField(codeField)
-
-        codeField = ogr.FieldDefn("synchronisation_key", ogr.OFTString)
-        brokerLayer.CreateField(codeField)
-
-        codeField = ogr.FieldDefn("oopt_type", ogr.OFTString)
-        brokerLayer.CreateField(codeField)
-
-        codeField = ogr.FieldDefn("name", ogr.OFTString)
-        brokerLayer.CreateField(codeField)
-
-        #Download each zip
-        srcRecordCounter = 0
-        for url in self.accounts['ua']['sources']:
-            print
-
-            UnzipFolder='tmpm'
-            CleanDir(UnzipFolder)
-
-            print 'retrive '+url
-            shpFileName = ''
-            shpFileName = DownloadAndUnzip(url,UnzipFolder)
-            print 'shpfilename'+shpFileName
-            
-            #shpFileName = 'tmpm/protected_area_polygon.shp'
-
-            #Open each Shapefile
-    
-            driver = ogr.GetDriverByName('ESRI Shapefile')
-            dataSource = driver.Open(shpFileName, 0) # 0 means read-only. 1 means writeable.
-
-            # Check to see if shapefile is found.
-            if dataSource is None:
-                print 'Could not open %s' % (shpFileName)
-            else:
-                print 'Opened %s' % (shpFileName)
-                ExternalLayer = dataSource.GetLayer()
-                featureCount = ExternalLayer.GetFeatureCount()
-                print "Number of features in %s: %d" % (os.path.basename(shpFileName),featureCount)
-
-            #does external data valid?
-            if (featureCount < 1):
-                print "Number of features in %s: %d" % (os.path.basename(shpFileName),featureCount)
-                return 1 
-
-            #change_attrs
-            #create new layer
-
-
-            '''
-            #deprecated generation of prj
-            srcSpatialRef = layer.GetSpatialRef()
-            print srcSpatialRef.ExportToWkt()
-            srcSpatialRef.MorphToESRI()
-            file = open(os.path.join('tmp',os.path.splitext(os.path.basename(shpFileName))[0]+'.prj'), 'w')
-            file.write(srcSpatialRef.ExportToWkt())
-            file.close()
-            '''
-
-            #Read data from shp
-
-            if ('protected_area' in url): 
-                ooptType='protected_area'
-            if ('national_park' in url): 
-                ooptType='national_park'
-            if ('nature_reserve' in url): 
-                ooptType='nature_reserve'
-            if ('ramsar_site' in url): 
-                ooptType='ramsar_site'
-            if ('park_polygon' in url): 
-                ooptType='park_polygon'
-            if ('nature_conservation' in url): 
-                ooptType='nature_conservation'
-
-
-
-            
-            for feature in ExternalLayer:
-                srcRecordCounter = srcRecordCounter+1
-                geom = feature.GetGeometryRef()
-                if self.ForceToMultiPolygon == True:
-                    if geom.GetGeometryType() == ogr.wkbPolygon:
-                        geom = ogr.ForceToMultiPolygon(geom)
-
-                featureDefn = brokerLayer.GetLayerDefn()
-                outfeature = ogr.Feature(featureDefn)
-                outfeature.SetGeometry(geom)
-
-                #Add our special field - oopt_type
-
-                outfeature.SetField("src_code", 'ua')
-                outfeature.SetField("synchronisation_key", 'ua'+str(srcRecordCounter))
-                outfeature.SetField("oopt_type", ooptType)
-
-
-                if feature.GetField("name") != None:
-                    outfeature.SetField("name", feature.GetField("name"))
-
-                if (geom.IsValid()):                
-                    brokerLayer.CreateFeature(outfeature)
-
-            #brokerLayer = None
-
-            WipeDir=True
-            if (WipeDir==False):
-                filelist = [ f for f in os.listdir(UnzipFolder) ]
-                for f in filelist:
-                    os.remove(os.path.join(UnzipFolder,f))
-            
-
-           
-            #Now we have ogr layer with all data from one server with our fields
-
-            #Выкачиваем из веба всё по этому источнику.
-
-            #Make ogr object - wfs connection to ngw - Get WFS layers and iterate over features
-            #Filter ngw objects by source attribute - using OGR WFS filter 
-
-
-
-
-
-        # Put broker records into array
-        brokerLayer.ResetReading()
-        wfs_result = dict()
-        for feat in brokerLayer:
-            
-            #create geometry object
-            geom = feat.GetGeometryRef()
-            if geom is not None:
-                sr = osr.SpatialReference()
-                sr.ImportFromEPSG(3857)
-                geom_type = geom.GetGeometryType() #say to Dima
-                geom.TransformTo(sr)
-                
-                if geom_type == ogr.wkbLineString:
-                    mercator_geom = ogr.ForceToLineString(geom)
-                elif geom_type == ogr.wkbPolygon:
-                    mercator_geom = ogr.ForceToPolygon(geom)
-                elif geom_type == ogr.wkbPoint:
-                    mercator_geom = ogr.ForceToPoint(geom)
-                elif geom_type == ogr.wkbMultiPolygon:
-                    mercator_geom = ogr.ForceToMultiPolygon(geom)
-                elif geom_type == ogr.wkbMultiPoint:
-                    mercator_geom = ogr.ForceToMultiPoint(geom)
-                elif geom_type == ogr.wkbMultiLineString:
-                    mercator_geom = ogr.ForceToMultiPolygon(geom)
-                else:            
-                    mercator_geom = geom
-            else:
-                continue
-            
-            #Read broker fields
-                            
-            feat_defn = brokerLayer.GetLayerDefn()
-            wfs_fields = dict()    
-            
-            for i in range(feat_defn.GetFieldCount()):
-                field_defn = feat_defn.GetFieldDefn(i)
-                #if field_defn.GetName() == 'gml_id':
-                #    continue
-                
-                #Compare by one control field    
-                                 
-                if field_defn.GetName() == check_field:
-                    check_field_val = feat.GetFieldAsString(i).decode('utf-8')  #GetFieldAsInteger64(i)
-                    
-                
-                #Read fields
-                if field_defn.GetType() == ogr.OFTInteger: #or field_defn.GetType() == ogr.OFTInteger64:
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsInteger(i) #GetFieldAsInteger64(i)
-#                    print "%s = %d" % (field_defn.GetName(), feat.GetFieldAsInteger64(i))
-                elif field_defn.GetType() == ogr.OFTReal:
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsDouble(i)
-#                    print "%s = %.3f" % (field_defn.GetName(), feat.GetFieldAsDouble(i))
-                elif field_defn.GetType() == ogr.OFTString:
-#                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
-                else:
-#                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
-            
-            #Object with keys - as values of one control field
-            wfs_result[check_field_val] = dict()        
-            wfs_result[check_field_val]['id'] = check_field_val      
-            wfs_result[check_field_val]['fields'] = wfs_fields
-            wfs_result[check_field_val]['geom'] = mercator_geom.Clone()
-
-
-        #sort here
-        wfs_result_sorted = dict()
-        for key in sorted(wfs_result):
-            wfs_result_sorted[key]=wfs_result[key]
-
-
-        return wfs_result_sorted
-
-
-
-
-
-    def openGeoJson0(self,check_field):
-
-        print 'synchro_geojson'
-        #print self.accounts
-        #print self.accounts['ua']['sources']
-
-        '''
-        ExternalLayer   - raw data from external provider
-        brokerLayer        - processed data from external provider in our format with our fields
-        ngwLayer        - layer in ngw
-        '''
-    
-        filename='routes_with_refs.geojson'
-
-
-        driver = ogr.GetDriverByName("GeoJSON")
-        dataSource = driver.Open(filename, 0)
-        layer = dataSource.GetLayer()
-
-        for feature in layer:
-            print feature.GetField("STATE_NAME")
-
-
-        wfs_names = ('Protected_Areas__federal__3',)
-        outDataSource = ogr.GetDriverByName( 'Memory' ).CreateDataSource(os.path.join('tmp','pm'+'.geojson'))
-        brokerLayer = outDataSource.CreateLayer("Processed data from external provider in our format with our fields", geom_type=ogr.wkbMultiPolygon)
-
-
-        #Create fields in middle data
-        codeField = ogr.FieldDefn("src_code", ogr.OFTString)
-        brokerLayer.CreateField(codeField)
-
-        codeField = ogr.FieldDefn("synchronisation_key", ogr.OFTString)
-        brokerLayer.CreateField(codeField)
-
-        codeField = ogr.FieldDefn("oopt_type", ogr.OFTString)
-        brokerLayer.CreateField(codeField)
-
-        codeField = ogr.FieldDefn("name", ogr.OFTString)
-        brokerLayer.CreateField(codeField)
-
-        #Download each zip
-        srcRecordCounter = 0
-        for  name in  wfs_names:	
-            print "Proceed " + name + " ..."
-
-            ExternalLayer = ds.GetLayerByName(name)	
-            ExternalLayer.ResetReading()
-
-            for feature in ExternalLayer:
-                srcRecordCounter = srcRecordCounter+1
-                geom = feature.GetGeometryRef()
-                if self.ForceToMultiPolygon == True:
-                    geom = ogr.ForceToMultiPolygon(geom)
-
-                featureDefn = brokerLayer.GetLayerDefn()
-                outfeature = ogr.Feature(featureDefn)
-                outfeature.SetGeometry(geom)
-
-                #Add our special field - oopt_type
-
-                outfeature.SetField("src_code", 'pm')
-                outfeature.SetField("synchronisation_key", 'pm'+str(srcRecordCounter))
-                outfeature.SetField("oopt_type", feature.GetField("Type_ru"))
-
-
-                if feature.GetField("Name_ru") != None:
-                    outfeature.SetField("name", feature.GetField("Name_ru"))
-
-                if (geom.IsValid()):                
-                    brokerLayer.CreateFeature(outfeature)
-
-
-        #todo: put to separate method
-        # Put broker records into array
-        brokerLayer.ResetReading()
-        wfs_result = dict()
-        for feat in brokerLayer:
-            
-            #create geometry object
-            geom = feat.GetGeometryRef()
-            if geom is not None:
-                sr = osr.SpatialReference()
-                sr.ImportFromEPSG(3857)
-                geom_type = geom.GetGeometryType() #say to Dima
-                geom.TransformTo(sr)
-                
-                if geom_type == ogr.wkbLineString:
-                    mercator_geom = ogr.ForceToLineString(geom)
-                elif geom_type == ogr.wkbPolygon:
-                    mercator_geom = ogr.ForceToPolygon(geom)
-                elif geom_type == ogr.wkbPoint:
-                    mercator_geom = ogr.ForceToPoint(geom)
-                elif geom_type == ogr.wkbMultiPolygon:
-                    mercator_geom = ogr.ForceToMultiPolygon(geom)
-                elif geom_type == ogr.wkbMultiPoint:
-                    mercator_geom = ogr.ForceToMultiPoint(geom)
-                elif geom_type == ogr.wkbMultiLineString:
-                    mercator_geom = ogr.ForceToMultiPolygon(geom)
-                else:            
-                    mercator_geom = geom
-            else:
-                continue
-            
-            #Read broker fields
-                            
-            feat_defn = brokerLayer.GetLayerDefn()
-            wfs_fields = dict()    
-            
-            for i in range(feat_defn.GetFieldCount()):
-                field_defn = feat_defn.GetFieldDefn(i)
-                #if field_defn.GetName() == 'gml_id':
-                #    continue
-                
-                #Compare by one control field    
-                                 
-                if field_defn.GetName() == check_field:
-                    check_field_val = feat.GetFieldAsString(i).decode('utf-8')  #GetFieldAsInteger64(i)
-                    
-                
-                #Read fields
-                if field_defn.GetType() == ogr.OFTInteger: #or field_defn.GetType() == ogr.OFTInteger64:
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsInteger(i) #GetFieldAsInteger64(i)
-#                    print "%s = %d" % (field_defn.GetName(), feat.GetFieldAsInteger64(i))
-                elif field_defn.GetType() == ogr.OFTReal:
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsDouble(i)
-#                    print "%s = %.3f" % (field_defn.GetName(), feat.GetFieldAsDouble(i))
-                elif field_defn.GetType() == ogr.OFTString:
-#                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
-                else:
-#                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
-            
-            #Object with keys - as values of one control field
-            wfs_result[check_field_val] = dict()        
-            wfs_result[check_field_val]['id'] = check_field_val      
-            wfs_result[check_field_val]['fields'] = wfs_fields
-            wfs_result[check_field_val]['geom'] = mercator_geom.Clone()
-
-
-        #sort here
-        wfs_result_sorted = dict()
-        for key in sorted(wfs_result):
-            wfs_result_sorted[key]=wfs_result[key]
-
-
-        return wfs_result_sorted
 
 
 
@@ -729,11 +290,7 @@ class OOPTFederate:
         '''
         import pprint
         pp = pprint.PrettyPrinter()       
-        #pp.pprint(ngw_result)
-        #quit()   
 
-        #print ngw_result
-        #quit()
 
         #sort ngw_result
         ngw_result_sorted = dict()
@@ -741,15 +298,11 @@ class OOPTFederate:
             ngw_result_sorted[ngw_result[key]['fields'][check_field]]=ngw_result[key]
         ngw_result = ngw_result_sorted
 
-        #sort ngw_result
+        #sort wfs_result
         wfs_result_sorted = dict()
         for key in wfs_result:
             wfs_result_sorted[wfs_result[key]['fields'][check_field]]=wfs_result[key]
         wfs_result = wfs_result_sorted
-
-
-
-
 
         for ngw_id in ngw_result:
             ngwFeatureId=ngw_result[ngw_id]['fields'][check_field]
@@ -784,9 +337,7 @@ class OOPTFederate:
 
 
 processor=OOPTFederate()
-'''
 
-'''
 externalData=processor.openGeoJson(check_field = 'road_id',filename='routes_with_refs.geojson')
 print 'fetch ngw data'
 ngwData=processor.GetNGWData('pa',check_field = 'road_id')
