@@ -36,13 +36,15 @@ class NGWSynchroniser:
     accounts = {}
 
 
-    def __init__(self):
+
+
+    def __init__(self,cfg):
 
         self.ForceToMultiPolygon = True #Не знаю, нужно ли?
         self.delta = 0.00000001 #Using in compare points 
-        self.ngw_url = 'http://trolleway.nextgis.com/api/resource/'
-        self.resid=6
-        self.ngw_creds = ('administrator', 's8q9MKWk')
+        self.ngw_url = cfg['ngw_url']+'/api/resource/'
+        self.resid=cfg['ngw_resource_id']
+        self.ngw_creds = (cfg['ngw_login'], cfg['ngw_password'])
 
         
 
@@ -330,10 +332,15 @@ class NGWSynchroniser:
     
 
      
+cfg=dict()
+cfg['ngw_url']='http://trolleway.nextgis.com'
+cfg['ngw_resource_id']=6
+cfg['ngw_login']='administrator'
+cfg['ngw_password']='admin'
+
+processor=NGWSynchroniser(cfg=cfg)
 
 
-
-processor=NGWSynchroniser()
 
 externalData=processor.openGeoJson(check_field = 'road_id',filename='routes_with_refs.geojson')
 print 'fetch ngw data'
