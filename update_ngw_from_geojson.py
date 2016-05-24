@@ -206,7 +206,7 @@ class NGWSynchroniser:
                 elif geom_type == ogr.wkbPolygon:
                     mercator_geom = ogr.ForceToPolygon(geom)
                 elif geom_type == ogr.wkbPoint:
-                    mercator_geom = ogr.ForceToPoint(geom)
+                    mercator_geom = ogr.ForceToMultiPoint(geom)
                 elif geom_type == ogr.wkbMultiPolygon:
                     mercator_geom = ogr.ForceToMultiPolygon(geom)
                 elif geom_type == ogr.wkbMultiPoint:
