@@ -92,6 +92,7 @@ class NGWSynchroniser:
         return True
         
     def comparePoints(self,ngw_pt, wfs_pt):
+        print (ngw_pt)
         return (abs(ngw_pt[0] - wfs_pt[0]) < self.delta) and (abs(ngw_pt[1] - wfs_pt[1]) < self.delta)
         
     def compareLines(self,ngw_line, wfs_line):
@@ -136,7 +137,7 @@ class NGWSynchroniser:
             return self.comparePolygons(ngw_geom, wfs_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiPoint:
             for i in range(ngw_geom.GetGeometryCount()):
-                if not self.comparePoint(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                if not self.comparePoints(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
                     return False
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiLineString:
             for i in range(ngw_geom.GetGeometryCount()):
@@ -343,6 +344,7 @@ class NGWSynchroniser:
                     req = requests.put(self.ngw_url + str(self.resid) + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=self.ngw_creds)
                     print self.ngw_url + str(self.resid) + '/feature/' + str(ngwFeatureId)
                     pp.pprint (json.dumps(payload))
+                    print 'status code:'+str(req)
             else:
                 print 'delete feature ' + str(ngw_id) + ' ngw_feature_id='+str(ngwFeatureId)
                 req = requests.delete(self.ngw_url + str(self.resid) + '/feature/' + str(ngwFeatureId), auth=self.ngw_creds)
