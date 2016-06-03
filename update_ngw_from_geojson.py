@@ -13,7 +13,7 @@ Before frist run you should create a layer from this file
 Allow deleting, updating and creating features.
 Records compared by values and geometry, so only updated records are transferred. 
 
-Usage: update_ngw_from_geojson.py --ngw_url http://trolleway.nextgis.com --ngw_resource_id 35 --ngw_login administrator --ngw_password admin --check_field road_id --filename routes_with_refs.geojson
+Usage: update_ngw_from_geojson.py --ngw_url http://yourname.nextgis.com --ngw_resource_id 35 --ngw_login debugger --ngw_password debug --check_field road_id --filename routes_with_refs.geojson
 '''
 
 import os
@@ -92,6 +92,7 @@ class NGWSynchroniser:
         return True
         
     def comparePoints(self,ngw_pt, wfs_pt):
+        print ngw_pt, wfs_pt
 
         return (abs(ngw_pt[0] - wfs_pt[0]) < self.delta) and (abs(ngw_pt[1] - wfs_pt[1]) < self.delta)
         
@@ -137,7 +138,7 @@ class NGWSynchroniser:
             return self.comparePolygons(ngw_geom, wfs_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiPoint:
             for i in range(ngw_geom.GetGeometryCount()):
-                if not self.comparePoints(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                if not self.comparePoints(ngw_geom.GetGeometryRef(i).GetPoint(0), wfs_geom.GetGeometryRef(i).GetPoint(0)):
                     return False
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiLineString:
             for i in range(ngw_geom.GetGeometryCount()):
@@ -360,6 +361,14 @@ class NGWSynchroniser:
                 req = requests.post(self.ngw_url + str(self.resid) + '/feature/', data=json.dumps(payload), auth=self.ngw_creds)
 
     
+
+    
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
