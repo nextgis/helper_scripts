@@ -9,6 +9,7 @@ Helpful NGW scripts
 * wfs2ngw - sync wfs -> ngw vector layers. The layer should be created from geojson formed by gdal (i.e. ogr2ogr)
 * dict_sync - sync lookup tables with remote sources
 * update_ngw_from_geojson.py - sync layer in ngw with local file with unique id field.
+* oopt_federation.py - скрипт для конкретного проекта, сейчас приостановлен.
  
 # License
 
