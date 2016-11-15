@@ -1,4 +1,22 @@
+# Описание
+
+Скрипт Получает из cedar по rest данные, обновляет в ngw только записи у которых sourceID равно id. Работает со слоем: http://176.9.38.120/fv/resource/64, 
+Поле status из cedar превращается из текста в цифру по классификатору https://github.com/nextgis/nextgisweb_forest_violations/issues/29 и записывается в поле status. 
+Содержимое поля status записывается в ngw в поле stmessage 
+
+# Установка
+
+1. git clone
+2. Переименовать config.example.py в config.py
+3. Записать в config.py адреса, пароли и id слоёв
+
+# Примеры исходных данных
+
+
+
 Содержимое ответа сервера cedar:
+
+```
 
 {"objectID":"A4861590o32437o64177o64171o236899",
 "number":15448,
@@ -19,7 +37,11 @@
 "time":57,
 "status":"Проверка проведена, подтвержден"}
 
+```
+
 Содержимое слоя в ngw
+
+```
 
 {
   "id": 23,
@@ -48,10 +70,6 @@
   }
 }
 
-
-получать изменения и обновлять только записи у которых sourceID равно id из слоя: http://176.9.38.120/fv/resource/64, 
-поле status из cedar превращается в цифру по классификатору https://github.com/nextgis/nextgisweb_forest_violations/issues/29 и записывается в поле status. 
-Содержимое поля status записывается в ngw в поле stmessage 
+```
 
 
-почему статус - то текст, то единица?

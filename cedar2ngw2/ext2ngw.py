@@ -55,14 +55,6 @@ def message2status(stmessage):
     return status
 
 
-def getFeatureIdforExternalId(objectId):
-    #В objectId записан id фичи в веб. Если его нет - то эта фича будет добавлена в веб  
-    req = requests.get(ngw_url + str(ngw_resourse_id)+'/feature/' + str(objectId), auth=ngw_creds)
-    if req.status_code > 400:
-        return None
-    else:
-        return objectId 
-    return None
 
 
 '''
@@ -73,10 +65,7 @@ def getFeatureIdforExternalId(objectId):
     Получается id фичи в ngw на основе внешних данных, если этой фичи нет в ngw, то id будет пустым
     Чего-то делается с атрибутами, полученными с внешнего сервера
     Создаётся новый payload с атрибутами, полученными с внешнего сервера
-    Если id фичи пустой, то 
-        создаётся новая фича в ngw
-    если id фичи есть, то
-        update фича в ngw
+        update фича в ngw (этот скрипт не должен создавать фичи, только изменять их)
 
 В файл last_update записывается текущее время 
 '''
@@ -114,7 +103,7 @@ if __name__ == '__main__':
         # check if update or insert
         #print item
         #print
-        ngwFeatureId = getFeatureIdforExternalId(item.get('sourceID'))
+        ngwFeatureId = item.get('sourceID')
         objectId = item.get('sourceID')
 
 
@@ -135,12 +124,8 @@ if __name__ == '__main__':
             continue
 
         print payload
-        if ngwFeatureId is None:
-            req = requests.post(ngw_url + ngw_resourse_id + '/feature/', data=json.dumps(payload), auth=ngw_creds)
-            print 'object id ' + str(objectId) + ' -- insert new feature' + ' ' + str(req.status_code) + ' ' + str(req.url)
-        else:
-            req = requests.put(ngw_url + ngw_resourse_id + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=ngw_creds)
-            print 'object id ' + str(objectId) + ' -- update feature #' + str(ngwFeatureId) + ' ' + str(req.status_code) + ' ' + str(req.url)
+        req = requests.put(ngw_url + ngw_resourse_id + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=ngw_creds)
+        print 'object id ' + str(objectId) + ' -- update feature #' + str(ngwFeatureId) + ' ' + str(req.status_code) + ' ' + str(req.url)
 
         #print req
         #print req.json()
