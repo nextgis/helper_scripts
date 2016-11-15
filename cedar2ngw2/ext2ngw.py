@@ -10,6 +10,8 @@ from datetime import datetime, date, time
 from requests.auth import HTTPDigestAuth
 from dateutil.parser import parse
 
+#from pudb import set_trace; set_trace()
+
 # new API citorus
 # http://91.239.143.154/cedar/updateObj?begin=1990-01-01T00:00:00.000Z&end=2015-09-21T00:00:00.000Z
 # http://91.239.143.154/cedar/updateObj?begin="1990-12-31T00:00:00.000Z"&end="2015-08-18T00:00:00.000Z"
@@ -26,67 +28,41 @@ ngw_creds = config.ngw_creds
 timeout = config.timeout
 ngw_resourse_id=config.ngw_resourse_id
 
-earthRadius = 6378137.0
 
-def wgs84ToMercatorSphereX(x):
-    return earthRadius * math.radians(x)
-
-def wgs84ToMercatorSphereY(y):
-    return earthRadius * math.log(math.tan(math.pi / 4 + math.radians(y) / 2))
-
-def parseGeom(geodict):
-    if geodict[0] < -180 or geodict[0] > 180 or geodict[1] < -90 or geodict[1] > 90:
-        return None
-#    firstVal = geodict[0]
-#    if type(firstVal) is float:
-    geom = 'MULTIPOINT ('
-    geom += str(wgs84ToMercatorSphereX(float(geodict[0])))
-    geom += u' '
-    geom += str(wgs84ToMercatorSphereY(float(geodict[1])))
-    geom += ')'
-    return geom
-#    else:
-#        geom = 'MULTIPOINT ('
-#        geosubdict = firstVal
-#        for geoitem in geosubdict:
-#           if geom != 'MULTIPOINT (':
-#               geom += ', '
-#           geom += str(wgs84ToMercatorSphereX(float(geoitem[0])))
-#           geom += u' '
-#           geom += str(wgs84ToMercatorSphereY(float(geoitem[1])))
-#        geom += ')'
-#        return geom
-
-def getFeatureIdforObjectId(objectId):
-#    print "get url: " + ngw_url + '57/feature/?objectID=' + objectId
-    try:
-        req = requests.get(ngw_url + ngw_resourse_id+'/feature/?objectID=' + objectId, auth=ngw_creds)
-        req.raise_for_status()
-    except requests.exceptions.HTTPError as err:
-        print err
-        import sys
-        sys.exit(1)
-
-    try:
-        dictionary = req.json()
-        for item in dictionary:
-            return item.get('id')
-    except Exception:
-        print 'json error'
-        print req        
-    return None
 
 def message2status(stmessage):
     status=''
     if stmessage == u'Новый': status='1'
+    elif stmessage == u'Подтвержден': status='2'
+    elif stmessage == u'Не подтвержден': status='3'
     elif stmessage == u'Принят в работу': status='4'
     elif stmessage == u'Проводится проверка': status='5'
-    elif stmessage == u'Проводится проверка': status='5'
-    else: status='99999'
+    elif stmessage == u'Удален': status='6'
+
+    elif stmessage == u'Передано в полицию': status='7'
+    elif stmessage == u'Возбуждено уголовное дело': status='8'
+    elif stmessage == u'Отказано в возбуждении уголовного дела': status='9'
+
+    elif stmessage == u'Усиливается': status='10'
+    elif stmessage == u'Действует': status='11'
+    elif stmessage == u'Ослабевает': status='12'
+    elif stmessage == u'Не распространяется': status='13'
+    elif stmessage == u'Локализован': status='14'
+    elif stmessage == u'Возобновился': status='15'
+    elif stmessage == u'Ликвидирован': status='16'
+    elif stmessage == u'Тушение приостановлено решением КЧС': status='17'
+    else: status=''
     return status
 
 
-
+def getFeatureIdforExternalId(objectId):
+    #В objectId записан id фичи в веб. Если его нет - то эта фича будет добавлена в веб  
+    req = requests.get(ngw_url + str(ngw_resourse_id)+'/feature/' + str(objectId), auth=ngw_creds)
+    if req.status_code > 400:
+        return None
+    else:
+        return objectId 
+    return None
 
 
 '''
@@ -94,10 +70,10 @@ def message2status(stmessage):
 Если скрипт уже запускался сегодня, то скрипт останавливается.
 Скрипт делает get-запрос на внешний сервер, команда updateObj, получает dict
 Проход по dict
-    Кастомным GET запросом к ngw получается атрибут id по атрибуту objectID.
+    Получается id фичи в ngw на основе внешних данных, если этой фичи нет в ngw, то id будет пустым
     Чего-то делается с атрибутами, полученными с внешнего сервера
     Создаётся новый payload с атрибутами, полученными с внешнего сервера
-    Если полученный id фичи пустой, то 
+    Если id фичи пустой, то 
         создаётся новая фича в ngw
     если id фичи есть, то
         update фича в ngw
@@ -138,22 +114,16 @@ if __name__ == '__main__':
         # check if update or insert
         #print item
         #print
-        ngwFeatureId = item.get('sourceID')
+        ngwFeatureId = getFeatureIdforExternalId(item.get('sourceID'))
         objectId = item.get('sourceID')
 
-        if item.get('geo') is None:
-            continue
 
-        geom = parseGeom(item.get('geo'))
-        if geom is None:
-            continue
 
 
         # print regionStr
 
 
         payload = {
-            'geom': geom,
             'fields':
                 {
                 'stmessage': item.get('status'),
@@ -166,11 +136,11 @@ if __name__ == '__main__':
 
         print payload
         if ngwFeatureId is None:
-            print 'object id ' + objectId + ' -- insert new feature' + ' ' + req.status_code
             req = requests.post(ngw_url + ngw_resourse_id + '/feature/', data=json.dumps(payload), auth=ngw_creds)
+            print 'object id ' + str(objectId) + ' -- insert new feature' + ' ' + str(req.status_code) + ' ' + str(req.url)
         else:
             req = requests.put(ngw_url + ngw_resourse_id + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=ngw_creds)
-            print 'object id ' + str(objectId) + ' -- update feature #' + str(ngwFeatureId) + ' ' + req.status_code
+            print 'object id ' + str(objectId) + ' -- update feature #' + str(ngwFeatureId) + ' ' + str(req.status_code) + ' ' + str(req.url)
 
         #print req
         #print req.json()
