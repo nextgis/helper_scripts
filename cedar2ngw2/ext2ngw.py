@@ -24,6 +24,7 @@ dict_creds = config.dict_creds
 ngw_url = config.ngw_url
 ngw_creds = config.ngw_creds
 timeout = config.timeout
+ngw_resourse_id=config.ngw_resourse_id
 
 earthRadius = 6378137.0
 
@@ -35,7 +36,7 @@ def wgs84ToMercatorSphereY(y):
 
 def parseGeom(geodict):
     if geodict[0] < -180 or geodict[0] > 180 or geodict[1] < -90 or geodict[1] > 90:
-	return None
+        return None
 #    firstVal = geodict[0]
 #    if type(firstVal) is float:
     geom = 'MULTIPOINT ('
@@ -58,11 +59,35 @@ def parseGeom(geodict):
 
 def getFeatureIdforObjectId(objectId):
 #    print "get url: " + ngw_url + '57/feature/?objectID=' + objectId
-    req = requests.get(ngw_url + '57/feature/?objectID=' + objectId, auth=ngw_creds)
-    dictionary = req.json()
-    for item in dictionary:
-        return item.get('id')
+    try:
+        req = requests.get(ngw_url + ngw_resourse_id+'/feature/?objectID=' + objectId, auth=ngw_creds)
+        req.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        print err
+        import sys
+        sys.exit(1)
+
+    try:
+        dictionary = req.json()
+        for item in dictionary:
+            return item.get('id')
+    except Exception:
+        print 'json error'
+        print req        
     return None
+
+def message2status(stmessage):
+    status=''
+    if stmessage == u'Новый': status='1'
+    elif stmessage == u'Принят в работу': status='4'
+    elif stmessage == u'Проводится проверка': status='5'
+    elif stmessage == u'Проводится проверка': status='5'
+    else: status='99999'
+    return status
+
+
+
+
 
 '''
 Скрипт определяет время последнего запуска, читая файл last_update, если файла нет - то время последнего запуска назаначается 1990 годом
@@ -111,101 +136,41 @@ if __name__ == '__main__':
         #pp.pprint(item)
 
         # check if update or insert
-        objectId = item.get('objectID')
-        ngwFeatureId = getFeatureIdforObjectId(objectId)
+        #print item
+        #print
+        ngwFeatureId = item.get('sourceID')
+        objectId = item.get('sourceID')
 
         if item.get('geo') is None:
             continue
 
         geom = parseGeom(item.get('geo'))
-	if geom is None:
-	    continue
+        if geom is None:
+            continue
 
-        #parse date
-        datestring = item.get('date')
-        if datestring is None:
-            year = 1970
-            month = 1
-            day = 1
-            hour = 0
-            minute = 0
-            second = 0
-        else:
-            date = parse(datestring)
-            timestring = item.get('time')
-            timedict = timestring.split(':')
-            year = date.year
-            month = date.month
-            day = date.day
-            hour = int(timedict[0])
-            minute = int(timedict[1])
-            second = 0
-
-        territoryStr = u''
-        for teritem in item.get('territory'):
-            quarter = teritem.get('quarter')
-            if quarter is not None:
-                if type(quarter) is int:
-            	    quarter = str(quarter)
-                territoryStr += u'квартал ' + quarter
-
-            vydel = teritem.get('vydel')
-            if vydel is not None:
-                if type(vydel) is int:
-            	    vydel = str(vydel)
-                territoryStr += u' выдел ' + vydel
-
-        # print  territoryStr
-        # "region":{"key":"","value":"Приморский край"}
-
-        region = item.get('region')
-        regionStr = region.get('value')
 
         # print regionStr
 
-        nnumber = 0
-        if item.get('number') != '':
-            nnumber = int(item.get('number'))
 
         payload = {
             'geom': geom,
             'fields':
                 {
-                'applicant': item.get('applicant'),
-                'area': item.get('area'),
-                'city': item.get('city'),
-                'controller': item.get('controller'),
-                'description': item.get('description'),
-                'district': item.get('district'),
-                'forestery': item.get('forestery'),
-                'landmarks': item.get('landmarks'),
-                'number': nnumber,
-                'objectID': objectId,
-                'precinct': item.get('precinct'),
-                'protection': item.get('protection'),
-                'region': regionStr,
-                'source_': item.get('source'),
-                'sourceID': item.get('sourceID'),
-                'species': item.get('species'),
-                'status': item.get('status'),
-                'territory': territoryStr,
-                'date' : {
-                    'year' : year,
-                    'month' : month,
-                    'day' : day,
-                    'hour' : hour,
-                    'minute' : minute,
-                    'second' : second }
+                'stmessage': item.get('status'),
+                'status': message2status(item.get('status'))
                 }
             }
 
+        if str(ngwFeatureId) == '':
+            continue
+
         print payload
         if ngwFeatureId is None:
-            print 'object id ' + objectId + ' -- insert new feature'
-            req = requests.post(ngw_url + '57/feature/', data=json.dumps(payload), auth=ngw_creds)
+            print 'object id ' + objectId + ' -- insert new feature' + ' ' + req.status_code
+            req = requests.post(ngw_url + ngw_resourse_id + '/feature/', data=json.dumps(payload), auth=ngw_creds)
         else:
-            req = requests.put(ngw_url + '57/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=ngw_creds)
-            print 'object id ' + objectId + ' -- update feature #' + str(ngwFeatureId)
+            req = requests.put(ngw_url + ngw_resourse_id + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=ngw_creds)
+            print 'object id ' + str(objectId) + ' -- update feature #' + str(ngwFeatureId) + ' ' + req.status_code
 
         #print req
         #print req.json()
