@@ -73,7 +73,7 @@ class NGWSynchroniser:
 
     def __init__(self,cfg):
 
-        self.ForceToMultiPolygon = True #Не знаю, нужно ли?
+        self.ForceToMultiGeom = False #В ngw api v2 надо было ставить True, но эта версия больше не поддерживается, поэтому всегда False
         self.delta = 0.00000001 #Using in compare points 
         self.ngw_url = cfg['ngw_url']+'/api/resource/'
         self.resid=cfg['ngw_resource_id']
@@ -92,14 +92,13 @@ class NGWSynchroniser:
         return True
         
     def comparePoints(self,ngw_pt, wfs_pt):
-        print ngw_pt, wfs_pt
-
         return (abs(ngw_pt[0] - wfs_pt[0]) < self.delta) and (abs(ngw_pt[1] - wfs_pt[1]) < self.delta)
         
     def compareLines(self,ngw_line, wfs_line):
         if ngw_line.GetPointCount() != wfs_line.GetPointCount():
             return False
         for i in range(ngw_line.GetPointCount()):
+            
 
             if not self.comparePoints(ngw_line.GetPoint(i), wfs_line.GetPoint(i)):
                 return False
@@ -127,11 +126,11 @@ class NGWSynchroniser:
         return True                 
         
     def compareGeom(self,ngw_geom, wfs_geom):  
-  
+
         if ngw_geom.GetGeometryCount() <> wfs_geom.GetGeometryCount():
             return False    #Diffirent geometry count
         elif ngw_geom.GetGeometryType() is ogr.wkbPoint:      
-            return self.comparePoints(ngw_geom, wfs_geom)  
+            return self.comparePoints(ngw_geom.GetPoint(), wfs_geom.GetPoint())  
         elif ngw_geom.GetGeometryType() is ogr.wkbLineString:
             return self.compareLines(ngw_geom, wfs_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbPolygon:
@@ -156,18 +155,13 @@ class NGWSynchroniser:
 
     def compareFeatures(self,ngw_feature, wfs_feature):
         # compare attributes
-        #pp = pprint.PrettyPrinter()       
-        #pp.pprint(ngw_feature)
-        #pp.pprint(wfs_feature)
-        #quit()
-
         ngw_fields = ngw_feature['fields']
         wfs_fields = wfs_feature['fields']
         for ngw_field in ngw_fields:
             if not self.compareValues(ngw_fields[ngw_field], wfs_fields[ngw_field]):
                 return False
         # compare geom
-        data=self.compareGeom(ngw_feature['geom'], wfs_feature['geom'])
+        data = self.compareGeom(ngw_feature['geom'], wfs_feature['geom'])
         return data
 
     def createPayload(self,wfs_feature):
@@ -177,15 +171,7 @@ class NGWSynchroniser:
         }
         return payload
 
-    #Taken from wfs2ngw.py
-
-
-
-
-
     def openGeoJson(self,check_field, filename):
-
-
 
         driver = ogr.GetDriverByName("GeoJSON")
         dataSource = driver.Open(filename, 0)
@@ -200,22 +186,25 @@ class NGWSynchroniser:
             if geom is not None:
                 sr = osr.SpatialReference()
                 sr.ImportFromEPSG(3857)
-                geom_type = geom.GetGeometryType() #say to Dima
+                geom_type = geom.GetGeometryType()
                 geom.TransformTo(sr)
                 
-                if geom_type == ogr.wkbLineString:
-                    mercator_geom = ogr.ForceToLineString(geom)
-                elif geom_type == ogr.wkbPolygon:
-                    mercator_geom = ogr.ForceToPolygon(geom)
-                elif geom_type == ogr.wkbPoint:
-                    mercator_geom = ogr.ForceToMultiPoint(geom)
-                elif geom_type == ogr.wkbMultiPolygon:
-                    mercator_geom = ogr.ForceToMultiPolygon(geom)
-                elif geom_type == ogr.wkbMultiPoint:
-                    mercator_geom = ogr.ForceToMultiPoint(geom)
-                elif geom_type == ogr.wkbMultiLineString:
-                    mercator_geom = ogr.ForceToMultiPolygon(geom)
-                else:            
+                if self.ForceToMultiGeom:
+                    if geom_type == ogr.wkbLineString:
+                        mercator_geom = ogr.ForceToLineString(geom)
+                    elif geom_type == ogr.wkbPolygon:
+                        mercator_geom = ogr.ForceToPolygon(geom)
+                    elif geom_type == ogr.wkbPoint:
+                        mercator_geom = ogr.ForceToMultiPoint(geom)
+                    elif geom_type == ogr.wkbMultiPolygon:
+                        mercator_geom = ogr.ForceToMultiPolygon(geom)
+                    elif geom_type == ogr.wkbMultiPoint:
+                        mercator_geom = ogr.ForceToMultiPoint(geom)
+                    elif geom_type == ogr.wkbMultiLineString:
+                        mercator_geom = ogr.ForceToMultiPolygon(geom)
+                    else:            
+                        mercator_geom = geom
+                else:
                     mercator_geom = geom
             else:
                 continue
@@ -267,12 +256,8 @@ class NGWSynchroniser:
         return layer_result_sorted
 
     def GetNGWData(self,code,check_field):
-
-        
-        
-        #check_field = 'synchronisation_key'
-        
-
+            
+        #check_field = 'synchronisation_key
         # Put NGW records into array   
 
         req = requests.get(self.ngw_url + str(self.resid) + '/feature/', auth=self.ngw_creds)
@@ -304,7 +289,6 @@ class NGWSynchroniser:
 
 
     def synchronize(self,wfs_result, ngw_result, check_field):
-
         # compare wfs_result and ngw_result
         
         '''
@@ -344,7 +328,7 @@ class NGWSynchroniser:
                     payload = self.createPayload(wfs_result[ngw_id])
                     req = requests.put(self.ngw_url + str(self.resid) + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=self.ngw_creds)
                     print 'update feature #' + str(ngw_id) + ' ' + str(req)
-                print 'same feature: '+str(ngw_id)
+                #print 'same feature: '+str(ngw_id)
             else:
                 print 'delete feature ' + str(ngw_id) + ' ngw_feature_id='+str(ngwFeatureId)
                 req = requests.delete(self.ngw_url + str(self.resid) + '/feature/' + str(ngwFeatureId), auth=self.ngw_creds)
