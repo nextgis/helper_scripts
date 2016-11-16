@@ -1,6 +1,6 @@
 # NextGIS Web helper scripts
 
-Helpful NGW scripts
+Helpful NGW scripts for REST API 
 
 # Script list and detailes
 
