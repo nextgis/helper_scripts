@@ -80,39 +80,39 @@ class NGWSynchroniser:
         self.ngw_creds = (cfg['ngw_login'], cfg['ngw_password'])
 
      #Taken from wfs2ngw.py
-    def compareValues(self,ngw_value, wfs_value):
-        if (ngw_value == '' or ngw_value == None) and (wfs_value == '' or wfs_value == None):
+    def compareValues(self,ngw_value, local_value):
+        if (ngw_value == '' or ngw_value == None) and (local_value == '' or local_value == None):
             return True
         
-        if isinstance(ngw_value, float) and isinstance(wfs_value, float):              
-            return abs(ngw_value - wfs_value) < self.delta 
+        if isinstance(ngw_value, float) and isinstance(local_value, float):              
+            return abs(ngw_value - local_value) < self.delta 
             
-        if ngw_value != wfs_value:      
+        if ngw_value != local_value:      
             return False
         return True
         
-    def comparePoints(self,ngw_pt, wfs_pt):
-        return (abs(ngw_pt[0] - wfs_pt[0]) < self.delta) and (abs(ngw_pt[1] - wfs_pt[1]) < self.delta)
+    def comparePoints(self,ngw_pt, local_pt):
+        return (abs(ngw_pt[0] - local_pt[0]) < self.delta) and (abs(ngw_pt[1] - local_pt[1]) < self.delta)
         
-    def compareLines(self,ngw_line, wfs_line):
-        if ngw_line.GetPointCount() != wfs_line.GetPointCount():
+    def compareLines(self,ngw_line, local_line):
+        if ngw_line.GetPointCount() != local_line.GetPointCount():
             return False
         for i in range(ngw_line.GetPointCount()):
             
 
-            if not self.comparePoints(ngw_line.GetPoint(i), wfs_line.GetPoint(i)):
+            if not self.comparePoints(ngw_line.GetPoint(i), local_line.GetPoint(i)):
                 return False
             
         return True
         
-    def comparePolygons(self,ngw_poly, wfs_poly):
+    def comparePolygons(self,ngw_poly, local_poly):
         ngw_poly_rings = ngw_poly.GetGeometryCount()
-        wfs_poly_rings = wfs_poly.GetGeometryCount()
-        if ngw_poly_rings != wfs_poly_rings:
+        local_poly_rings = local_poly.GetGeometryCount()
+        if ngw_poly_rings != local_poly_rings:
             return False
 
         for i in range(ngw_poly_rings):
-            if not self.compareLines(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
+            if not self.compareLines(ngw_poly.GetGeometryRef(i), local_poly.GetGeometryRef(i)):
                 return False 
 
 
@@ -120,32 +120,32 @@ class NGWSynchroniser:
 
 
         for i in range(ngw_poly.GetPointCount()):
-            if not self.comparePoints(ngw_poly.GetGeometryRef(i), wfs_poly.GetGeometryRef(i)):
+            if not self.comparePoints(ngw_poly.GetGeometryRef(i), local_poly.GetGeometryRef(i)):
                 return False
 
         return True                 
         
-    def compareGeom(self,ngw_geom, wfs_geom):  
+    def compareGeom(self,ngw_geom, local_geom):  
 
-        if ngw_geom.GetGeometryCount() <> wfs_geom.GetGeometryCount():
+        if ngw_geom.GetGeometryCount() <> local_geom.GetGeometryCount():
             return False    #Diffirent geometry count
         elif ngw_geom.GetGeometryType() is ogr.wkbPoint:      
-            return self.comparePoints(ngw_geom.GetPoint(), wfs_geom.GetPoint())  
+            return self.comparePoints(ngw_geom.GetPoint(), local_geom.GetPoint())  
         elif ngw_geom.GetGeometryType() is ogr.wkbLineString:
-            return self.compareLines(ngw_geom, wfs_geom)  
+            return self.compareLines(ngw_geom, local_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbPolygon:
-            return self.comparePolygons(ngw_geom, wfs_geom)  
+            return self.comparePolygons(ngw_geom, local_geom)  
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiPoint:
             for i in range(ngw_geom.GetGeometryCount()):
-                if not self.comparePoints(ngw_geom.GetGeometryRef(i).GetPoint(0), wfs_geom.GetGeometryRef(i).GetPoint(0)):
+                if not self.comparePoints(ngw_geom.GetGeometryRef(i).GetPoint(0), local_geom.GetGeometryRef(i).GetPoint(0)):
                     return False
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiLineString:
             for i in range(ngw_geom.GetGeometryCount()):
-                if not self.compareLines(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                if not self.compareLines(ngw_geom.GetGeometryRef(i), local_geom.GetGeometryRef(i)):
                     return False
         elif ngw_geom.GetGeometryType() is ogr.wkbMultiPolygon:
             for i in range(ngw_geom.GetGeometryCount()):
-                if not self.comparePolygons(ngw_geom.GetGeometryRef(i), wfs_geom.GetGeometryRef(i)):
+                if not self.comparePolygons(ngw_geom.GetGeometryRef(i), local_geom.GetGeometryRef(i)):
                     return False
         else:
 
@@ -153,21 +153,21 @@ class NGWSynchroniser:
 
         return True     
 
-    def compareFeatures(self,ngw_feature, wfs_feature):
+    def compareFeatures(self,ngw_feature, local_feature):
         # compare attributes
         ngw_fields = ngw_feature['fields']
-        wfs_fields = wfs_feature['fields']
+        local_fields = local_feature['fields']
         for ngw_field in ngw_fields:
-            if not self.compareValues(ngw_fields[ngw_field], wfs_fields[ngw_field]):
+            if not self.compareValues(ngw_fields[ngw_field], local_fields[ngw_field]):
                 return False
         # compare geom
-        data = self.compareGeom(ngw_feature['geom'], wfs_feature['geom'])
+        data = self.compareGeom(ngw_feature['geom'], local_feature['geom'])
         return data
 
-    def createPayload(self,wfs_feature):
+    def createPayload(self,local_feature):
         payload = {
-            'geom': wfs_feature['geom'].ExportToWkt(),
-            'fields': wfs_feature['fields']
+            'geom': local_feature['geom'].ExportToWkt(),
+            'fields': local_feature['fields']
         }
         return payload
 
@@ -178,7 +178,7 @@ class NGWSynchroniser:
         layer = dataSource.GetLayer()
 
 
-        wfs_result = dict()
+        local_result = dict()
         for feat in layer:
             
             #create geometry object
@@ -213,7 +213,7 @@ class NGWSynchroniser:
 
 
             feat_defn = layer.GetLayerDefn()
-            wfs_fields = dict()    
+            local_fields = dict()    
             
             for i in range(feat_defn.GetFieldCount()):
                 field_defn = feat_defn.GetFieldDefn(i)
@@ -228,28 +228,28 @@ class NGWSynchroniser:
                 
                 #Read fields
                 if field_defn.GetType() == ogr.OFTInteger: #or field_defn.GetType() == ogr.OFTInteger64:
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsInteger(i) #GetFieldAsInteger64(i)
+                    local_fields[field_defn.GetName()] = feat.GetFieldAsInteger(i) #GetFieldAsInteger64(i)
 #                    print "%s = %d" % (field_defn.GetName(), feat.GetFieldAsInteger64(i))
                 elif field_defn.GetType() == ogr.OFTReal:
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsDouble(i)
+                    local_fields[field_defn.GetName()] = feat.GetFieldAsDouble(i)
 #                    print "%s = %.3f" % (field_defn.GetName(), feat.GetFieldAsDouble(i))
                 elif field_defn.GetType() == ogr.OFTString:
 #                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
+                    local_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
                 else:
 #                    print "%s = %s" % (field_defn.GetName(), feat.GetFieldAsString(i))
-                    wfs_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
+                    local_fields[field_defn.GetName()] = feat.GetFieldAsString(i).decode('utf-8')
             
             #Object with keys - as values of one control field
-            wfs_result[check_field_val] = dict()        
-            wfs_result[check_field_val]['id'] = check_field_val      
-            wfs_result[check_field_val]['fields'] = wfs_fields
-            wfs_result[check_field_val]['geom'] = mercator_geom.Clone()
+            local_result[check_field_val] = dict()        
+            local_result[check_field_val]['id'] = check_field_val      
+            local_result[check_field_val]['fields'] = local_fields
+            local_result[check_field_val]['geom'] = mercator_geom.Clone()
 
 
         layer_result_sorted = dict()
-        for key in sorted(wfs_result):
-            layer_result_sorted[key]=wfs_result[key]
+        for key in sorted(local_result):
+            layer_result_sorted[key]=local_result[key]
 
 
 
@@ -288,8 +288,8 @@ class NGWSynchroniser:
         return ngw_result_sorted
 
 
-    def synchronize(self,wfs_result, ngw_result, check_field):
-        # compare wfs_result and ngw_result
+    def synchronize(self,local_result, ngw_result, check_field):
+        # compare local_result and ngw_result
         
         '''
         Compare ngw records with wfs
@@ -310,22 +310,22 @@ class NGWSynchroniser:
             ngw_result_sorted[ngw_result[key]['fields'][check_field]]=ngw_result[key]
         ngw_result = ngw_result_sorted
 
-        #sort wfs_result
-        wfs_result_sorted = dict()
-        for key in wfs_result:
-            wfs_result_sorted[wfs_result[key]['fields'][check_field]]=wfs_result[key]
-        wfs_result = wfs_result_sorted
+        #sort local_result
+        local_result_sorted = dict()
+        for key in local_result:
+            local_result_sorted[local_result[key]['fields'][check_field]]=local_result[key]
+        local_result = local_result_sorted
 
         for ngw_id in ngw_result:
             #ngwFeatureId=ngw_result[ngw_id]['fields'][check_field]
             ngwFeatureId=ngw_result[ngw_id]['id']
 
-            #if ngw_id in wfs_result:
-            if wfs_result.has_key(ngw_result[ngw_id]['fields'][check_field]):
-                if not self.compareFeatures(ngw_result[ngw_id], wfs_result[ngw_id]):
+            #if ngw_id in local_result:
+            if local_result.has_key(ngw_result[ngw_id]['fields'][check_field]):
+                if not self.compareFeatures(ngw_result[ngw_id], local_result[ngw_id]):
                     # update ngw feature
                     
-                    payload = self.createPayload(wfs_result[ngw_id])
+                    payload = self.createPayload(local_result[ngw_id])
                     req = requests.put(self.ngw_url + str(self.resid) + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=self.ngw_creds)
                     print 'update feature #' + str(ngw_id) + ' ' + str(req)
                 #print 'same feature: '+str(ngw_id)
@@ -336,12 +336,12 @@ class NGWSynchroniser:
         # add new
 
 
-        for wfs_id in wfs_result:
-            #wfsFeatureId=wfs_result[wfs_id]['fields'][check_field]
+        for local_id in local_result:
+            #wfsFeatureId=local_result[local_id]['fields'][check_field]
 
-            if wfs_id not in ngw_result:
-                print 'add new feature #' + str(wfs_id)
-                payload = self.createPayload(wfs_result[wfs_id])
+            if local_id not in ngw_result:
+                print 'add new feature #' + str(local_id)
+                payload = self.createPayload(local_result[local_id])
                 req = requests.post(self.ngw_url + str(self.resid) + '/feature/', data=json.dumps(payload), auth=self.ngw_creds)
 
     
