@@ -26,7 +26,7 @@ dict_creds = config.dict_creds
 ngw_url = config.ngw_url
 ngw_creds = config.ngw_creds
 timeout = config.timeout
-ngw_resourse_id=config.ngw_resourse_id
+ngw_resourse_id='64'
 
 
 
@@ -73,8 +73,8 @@ def message2status(stmessage):
 if __name__ == '__main__':
 
     # read last script run timestamp
-    if os.path.isfile('last_update'):
-        with open('last_update', 'r') as f:
+    if os.path.isfile('last_update_alerts'):
+        with open('last_update_alerts', 'r') as f:
            lastDtStr = f.read()
     # or set it to default value
     else:
@@ -85,11 +85,11 @@ if __name__ == '__main__':
     lastDt = parse(lastDtStr)
     nowDt = parse(nowDtStr)
 
-    if lastDt.year == nowDt.year and lastDt.month == nowDt.month and lastDt.day == nowDt.day:
-        print 'already worked today! let me relax please!'
+    if lastDt.year == nowDt.year and lastDt.month == nowDt.month and lastDt.day == nowDt.day and lastDt.hour == nowDt.hour:
+        print 'already worked this hour! let me relax please!'
         exit()
 
-    srsUrl = dict_url + '/cedar/updateObj' + '?begin=' + lastDtStr + '&end=' + nowDtStr
+    srsUrl = dict_url + 'updateObj' + '?begin=' + lastDtStr + '&end=' + nowDtStr
     print srsUrl
 
     req = requests.get(srsUrl, auth=HTTPDigestAuth(*dict_creds))
@@ -131,6 +131,6 @@ if __name__ == '__main__':
         #print req.json()
 
     # save last run time
-    with open('last_update', 'w') as f:
+    with open('last_update_alerts', 'w') as f:
         f.write(datetime.now().isoformat() + 'Z')
         
