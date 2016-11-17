@@ -7,7 +7,10 @@
 
 
 
-
+import requests
+import sys
+import os
+import json
 
 class ngw_synchroniser:
 
@@ -20,7 +23,7 @@ class ngw_synchroniser:
         self.delta = 0.00000001 #Using in compare points 
         self.ngw_url = cfg['ngw_url']+'/api/resource/'
         self.resid=cfg['ngw_resource_id']
-        self.ngw_creds = (cfg['ngw_login'], cfg['ngw_password'])
+        self.ngw_creds = (cfg['ngw_creds'])
 
      #Taken from wfs2ngw.py
     def compareValues(self,ngw_value, local_value):
@@ -291,12 +294,37 @@ class ngw_synchroniser:
                 payload = self.createPayload(local_result[local_id])
                 req = requests.post(self.ngw_url + str(self.resid) + '/feature/', data=json.dumps(payload), auth=self.ngw_creds)
 
-    def layer2json(layer_id):
+    def layer2json(self,layer_id,filename):
         """Return all features from layer in NGW internal json format 
 
 
         """   
-        req = requests.get(self.ngw_url + str(layer_id) + '/',  auth=self.ngw_creds)
+        try:
+            req = requests.get(self.ngw_url + str(layer_id) + '/feature/',  auth=self.ngw_creds)
+            req.raise_for_status()
 
-    
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            print e
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            sys.exit(1)
 
+
+        return req.json()
+        # Writing JSON data
+        with open(filename, 'w') as f:
+             json.dump(req.json(), f)
+
+    def compareDumps(self,dump1new,dump1old):
+        ''' 
+        Return a changeset for two JSON dumps of ngw layers created in diffrent times.
+        Format will be maximum simlar to OSM changeset, because if often used
+        '''
+        return 0
+
+    def applyChangeset(self,changeset,layer_id):
+        ''' 
+        Apply changeset for layer. Make REST calls.
+        '''
+        return 0
