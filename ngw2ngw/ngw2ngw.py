@@ -35,16 +35,14 @@ if __name__ == '__main__':
     cfg=dict()
     cfg['ngw_url']          = config.ngw1_url
     cfg['ngw_resource_id']  = config.ngw1_resource_id
-    cfg['ngw_login']        = config.ngw1_login
-    cfg['ngw_password']     = config.ngw1_password
+    cfg['ngw_creds']        = config.ngw1_creds
     processor1=ngw_synchroniser.ngw_synchroniser(cfg=cfg)
 
 
     cfg=dict()
     cfg['ngw_url']          = config.ngw2_url
     cfg['ngw_resource_id']  = config.ngw2_resource_id
-    cfg['ngw_login']        = config.ngw2_login
-    cfg['ngw_password']     = config.ngw2_password
+    cfg['ngw_creds']        = config.ngw2_creds
     processor2=ngw_synchroniser.ngw_synchroniser(cfg=cfg)
 
 
@@ -56,22 +54,38 @@ if __name__ == '__main__':
     ngwData=processor.GetNGWData('pa',check_field = args.check_field)
     processor.synchronize(externalData,ngwData,check_field = args.check_field)
     '''
-    dump1new=processor1.dumpLayer(config.ngw1_resource_id)
-    quit()
 
 
+    dump1new=processor1.layer2json(config.ngw1_resource_id,config.ngw1_dump_today_filename)
+    # Writing JSON data
+    with open(config.ngw1_dump_today_filename, 'w') as f:
+         json.dump(dump1new, f)
 
-    dump2new=processor.dumpLayer()
-    changeset1=processor.compareDumps(dump1new,dump1old)
-    changeset2=processor.compareDumps(dump2new,dump2old)
+    dump2new=processor2.layer2json(config.ngw2_resource_id,config.ngw2_dump_today_filename)
+    # Writing JSON data
+    with open(config.ngw2_dump_today_filename, 'w') as f:
+         json.dump(dump2new, f)
 
-    #apply changeset from 1 to 2
-    processor.applyChangeset(changeset1,layer2)    
+  
+    if os.path.isfile(config.ngw1_dump_yesterday_filename) and  os.path.isfile(config.ngw2_dump_yesterday_filename):
 
-    #apply changeset from 2 to 1
-    processor.applyChangeset(changeset2,layer1)
 
-    dump1old=processor.dumpLayer(layer1)
-    dump2old=processor.dumpLayer(layer2)
-    dump1old.save()
-    dump2ols.save()
+        with open(config.ngw1_dump_today_filename) as json_data:
+            dump1old = json.load(json_data)
+
+        with open(config.ngw2_dump_today_filename) as json_data:
+            dump2old = json.load(json_data)
+
+        changeset1=processor1.compareDumps(dump1new,dump1old)
+        changeset2=processor1.compareDumps(dump2new,dump2old)
+
+        #apply changeset from 1 to 2
+        processor2.applyChangeset(changeset1,config.ngw2_resource_id)    
+
+        #apply changeset from 2 to 1
+        processor1.applyChangeset(changeset2,config.ngw1_resource_id)
+
+    #save today dump as yesterday dump 
+
+    os.rename(config.ngw1_dump_today_filename,config.ngw1_dump_yesterday_filename)
+    os.rename(config.ngw2_dump_today_filename,config.ngw2_dump_yesterday_filename)
