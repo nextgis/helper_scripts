@@ -96,6 +96,7 @@ if __name__ == '__main__':
     dictionary = req.json()
 
     # pp = pprint.PrettyPrinter(indent=4)
+    ids = []
 
     for item in dictionary:
         #pp.pprint(item)
@@ -122,6 +123,11 @@ if __name__ == '__main__':
 
         if str(ngwFeatureId) == '':
             continue
+            
+        if ngwFeatureId in ids:
+	        continue
+	    
+	    ids.append(ngwFeatureId)
 
         print payload
         req = requests.put(ngw_url + ngw_resourse_id + '/feature/' + str(ngwFeatureId), data=json.dumps(payload), auth=ngw_creds)
