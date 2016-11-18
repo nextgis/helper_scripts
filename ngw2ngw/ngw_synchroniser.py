@@ -401,19 +401,32 @@ class ngw_synchroniser:
         Apply changeset for layer. Make REST calls.
         
         В метод поступает id слоя и чейнджсет - набор изменений другого слоя
-
-        Проходим по чейнджсету
-            Записей PUT по условиям задания в нём нет
-            Если запись POST
-                Если есть атачменты
-                    Проходим по списку атачментов
-                        Грузим атачмент, добавляем в массив json-ответ от сервера
-                Составляем payload с полями, добавляем атачмент
-            Если запись DELETE
-                Находим через REST в слое запись с такими же полями и атрибутами.
-                Грохаем запись
-                В случае             
-
-
         '''
+        import pprint
+        pp = pprint.PrettyPrinter() 
+        if (changeset == None):
+            return 0
+        #Записей PUT по условиям задания в нём нет
+        #Если запись POST
+        #Проходим по чейнджсету
+        if (changeset['POST'] != None):
+            for feature in changeset['POST']:
+                #Если есть атачменты
+                if (feature['extensions']['attachment'] != None):
+                    #Проходим по списку атачментов
+                    for attachment in feature['extensions']['attachment']:
+                        print 'upload attachment '+attachment['name']
+                        #Грузим атачмент, добавляем в массив json-ответ от сервера
+                
+                #Составляем payload с полями, добавляем атачмент
+                print 'create payload for POST'
+        #Если запись DELETE
+        if (changeset['POST'] != None):
+            print 'Получаем сейчас весь слой из веба, что бы найти в нём записи, которые надо удалить'
+            #Находим через REST в слое запись с такими же полями и атрибутами.
+            #Грохаем запись
+            #В случае             
+
+
+        
         return 0
