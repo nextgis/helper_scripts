@@ -75,6 +75,7 @@ class ngw_synchroniser:
         
     def compareGeom(self,ngw_geom, local_geom):  
 
+
         if ngw_geom.GetGeometryCount() <> local_geom.GetGeometryCount():
             return False    #Diffirent geometry count
         elif ngw_geom.GetGeometryType() is ogr.wkbPoint:      
@@ -215,11 +216,11 @@ class ngw_synchroniser:
         req = requests.get(self.ngw_url + str(self.resid) + '/feature/', auth=self.ngw_creds)
         dictionary = req.json()
 
-        ngw_result_sorted = self.ngw_layer2dict(dictionary,check_field=check_field)
+        ngw_result_sorted = self.ngw_result_sort(dictionary,check_field=check_field)
 
         return ngw_result_sorted
 
-    def ngw_layer2dict(self,json,check_field=None,useID=False):
+    def ngw_result_sort(self,json,check_field=None,useID=False):
         '''
         Take JSON-представление of ngw layer, return sorted dict. Uses in two synchronisation algoritms.
         Example:
@@ -340,6 +341,9 @@ class ngw_synchroniser:
     def compareDumps(self,dumpnew,dumpold):
         import pprint
         pp = pprint.PrettyPrinter() 
+        changeset=dict()
+        changeset['DELETE']=list()
+        changeset['POST']=list()
 
         ''' 
         Return a changeset for two JSON dumps of ngw layers created in diffrent times.
@@ -354,19 +358,43 @@ class ngw_synchroniser:
         #Если у записей не совпадают геометрии, или не совпадают fields - то они считаются разными.
         #Дополнительно, у них могут не совпадать аттачменты.
 
+        dumpnew_sorted = self.ngw_result_sort(dumpnew,useID=True)      
+        dumpold_sorted = self.ngw_result_sort(dumpold,useID=True)      
         #Проходим по списку id из старого дампа, сравниваем каждую запись с записью с таким же id из нового.
-        #dumpold_sorted=dumpold_s
+        for old_id, old_feature in dumpold_sorted.iteritems():
+            #Нельзя просто сравнить два куска json, потому что они хранятся как объекты gdal
+          
+            #Если в новом дампе не найдена запись с id из старого, значит в слое запись удалилась, добавляем в чейнджсет DELETE (содержимое записи из старого дампа)
+            if (old_id not in dumpnew_sorted):
+                print 'Feature ' + str(old_id) + ' deleted. DELETE'
+                changeset_element=dict()
+                changeset_element=dumpold_sorted[old_id]
+                changeset['DELETE'].append(changeset_element)
+                continue
+            #Если переменные разные, - такая ситуация возникнуть не должна #значит в слое запись изменилась, то добавляем в чейнджсет PUT(запись из нового дампа). Если атачменты разные, то делаем запись чейнджсета по атачментам
+            if (old_feature['extensions'] != dumpnew_sorted[old_id]['extensions']) or (old_feature['fields'] != dumpnew_sorted[old_id]['fields']) or (self.compareGeom(dumpold_sorted[old_id]['geom'],dumpnew_sorted[old_id]['geom']) == False):
+                print 'Запись ' + str(old_id) + ' изменилась с прошлого запуска скрипта. Эта ситуация не предполагалась. Запись не трогается.' 
 
-        pp.pprint(self.ngw_layer2dict(dumpold,check_field=None,useID=True))
+                
+
             #в чейнджсетах записываются данные записи а не их id
             #Если переменные одинаковы, то идём дальше. 
-            #Если переменные разные, - такая ситуация возникнуть не должна #значит в слое запись изменилась, то добавляем в чейнджсет PUT(запись из нового дампа). Если атачменты разные, то делаем запись чейнджсета по атачментам
-            #Если в новом дампе не найдена запись с id из старого, значит в слое запись удалилась, добавляем в чейнджсет DELETE (содержимое записи из старого дампа)
+            else:
+                print 'Feature ' + str(old_id) + ' not changed'
+                continue
         #Проходим по списку id из нового дампа, сравниваем каждую запись с записью с таким же id из старого
-        #если в старом дампе нет id такого же как в новом, то добавляем в чейнджсет POST(содержимое записи)
+        for new_id, new_feature in dumpnew_sorted.iteritems():
+            #если в старом дампе нет id такого же как в новом, то добавляем в чейнджсет POST(содержимое записи)
+            if (new_id not in dumpold_sorted):
+                print 'Feature ' + str(old_id) + ' added. POST'
+                changeset_element=dict()
+                changeset_element=dumpnew_sorted[new_id]
+                changeset['POST'].append(changeset_element)
+                continue
 
         #Vj;
-        return 0
+        pp.pprint(changeset)
+        return changeset
 
     def applyChangeset(self,changeset,layer_id):
         ''' 
