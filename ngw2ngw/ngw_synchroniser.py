@@ -11,6 +11,8 @@ import requests
 import sys
 import os
 import json
+from osgeo import ogr, gdal
+from osgeo import osr
 
 class ngw_synchroniser:
 
@@ -212,10 +214,30 @@ class ngw_synchroniser:
 
         req = requests.get(self.ngw_url + str(self.resid) + '/feature/', auth=self.ngw_creds)
         dictionary = req.json()
+
+        ngw_result_sorted = self.ngw_layer2dict(dictionary,check_field=check_field)
+
+        return ngw_result_sorted
+
+    def ngw_layer2dict(self,json,check_field=None,useID=False):
+        '''
+        Take JSON-представление of ngw layer, return sorted dict. Uses in two synchronisation algoritms.
+        Example:
+            ngw_result_sorted = self.ngw_layer2dict(req.json(),check_field='some_attribute') returns dict with keys are values of attribute
+            ngw_result_sorted = self.ngw_layer2dict(req.json(),useId=True) returns dict with keys are ngw id
+        '''
+
+
+        dictionary = json
         ngw_result = dict()
         geom_type = None
         for item in dictionary:
-                objectid = item['fields'][check_field]
+                if check_field:
+                    objectid = item['fields'][check_field]
+                elif useID:
+                    objectid = item['id']
+                else:
+                    raise ValueError('You must specify for ngw_layer2dict [check_field] or [useID=True]')
                 ngw_geom = ogr.CreateGeometryFromWkt(item['geom'])
                 if geom_type is None:
                     geom_type = ngw_geom.GetGeometryType()
@@ -223,17 +245,16 @@ class ngw_synchroniser:
                 #filter here
 
                 ngw_result[objectid] = dict(
-                    id=item['id'],
-                    geom=ngw_geom,
-                    fields=item['fields']
+                    id = item['id'],
+                    geom = ngw_geom,
+                    fields = item['fields'],
+                    extensions = item['extensions']
                 )
                     
                 #sort here
         ngw_result_sorted = dict()
         for key in sorted(ngw_result):
             ngw_result_sorted[key]=ngw_result[key]
-
- 
 
         return ngw_result_sorted
 
@@ -316,15 +337,55 @@ class ngw_synchroniser:
         with open(filename, 'w') as f:
              json.dump(req.json(), f)
 
-    def compareDumps(self,dump1new,dump1old):
+    def compareDumps(self,dumpnew,dumpold):
+        import pprint
+        pp = pprint.PrettyPrinter() 
+
         ''' 
         Return a changeset for two JSON dumps of ngw layers created in diffrent times.
         Format will be maximum simlar to OSM changeset, because if often used
         '''
+        #Проверяет сначала, вдруг переменные абсолютно одинаковы, тогда ничего делать не надо
+        if dumpnew == dumpold:
+            print 'Дампы одинаковые'
+            return None
+        #Потом как сравнивать? Можно по порядку каждую с каждой - но тогда из середины чего-нибудь удалится, и непонятно будет что делать.
+        #Сравнивать можно по одинаковым id, ведь это сравнение новой версии слоя со старой.
+        #Если у записей не совпадают геометрии, или не совпадают fields - то они считаются разными.
+        #Дополнительно, у них могут не совпадать аттачменты.
+
+        #Проходим по списку id из старого дампа, сравниваем каждую запись с записью с таким же id из нового.
+        #dumpold_sorted=dumpold_s
+
+        pp.pprint(self.ngw_layer2dict(dumpold,check_field=None,useID=True))
+            #в чейнджсетах записываются данные записи а не их id
+            #Если переменные одинаковы, то идём дальше. 
+            #Если переменные разные, - такая ситуация возникнуть не должна #значит в слое запись изменилась, то добавляем в чейнджсет PUT(запись из нового дампа). Если атачменты разные, то делаем запись чейнджсета по атачментам
+            #Если в новом дампе не найдена запись с id из старого, значит в слое запись удалилась, добавляем в чейнджсет DELETE (содержимое записи из старого дампа)
+        #Проходим по списку id из нового дампа, сравниваем каждую запись с записью с таким же id из старого
+        #если в старом дампе нет id такого же как в новом, то добавляем в чейнджсет POST(содержимое записи)
+
+        #Vj;
         return 0
 
     def applyChangeset(self,changeset,layer_id):
         ''' 
         Apply changeset for layer. Make REST calls.
+        
+        В метод поступает id слоя и чейнджсет - набор изменений другого слоя
+
+        Проходим по чейнджсету
+            Записей PUT по условиям задания в нём нет
+            Если запись POST
+                Если есть атачменты
+                    Проходим по списку атачментов
+                        Грузим атачмент, добавляем в массив json-ответ от сервера
+                Составляем payload с полями, добавляем атачмент
+            Если запись DELETE
+                Находим через REST в слое запись с такими же полями и атрибутами.
+                Грохаем запись
+                В случае             
+
+
         '''
         return 0

@@ -70,13 +70,15 @@ if __name__ == '__main__':
     if os.path.isfile(config.ngw1_dump_yesterday_filename) and  os.path.isfile(config.ngw2_dump_yesterday_filename):
 
 
-        with open(config.ngw1_dump_today_filename) as json_data:
+        with open(config.ngw1_dump_yesterday_filename) as json_data:
             dump1old = json.load(json_data)
 
-        with open(config.ngw2_dump_today_filename) as json_data:
+        with open(config.ngw2_dump_yesterday_filename) as json_data:
             dump2old = json.load(json_data)
 
+        print 'Составление чейнджсета с 1 на 2 сервер'
         changeset1=processor1.compareDumps(dump1new,dump1old)
+        print 'Составление чейнджсета с 2 на 1 сервер'
         changeset2=processor1.compareDumps(dump2new,dump2old)
 
         #apply changeset from 1 to 2
@@ -87,5 +89,5 @@ if __name__ == '__main__':
 
     #save today dump as yesterday dump 
 
-    os.rename(config.ngw1_dump_today_filename,config.ngw1_dump_yesterday_filename)
-    os.rename(config.ngw2_dump_today_filename,config.ngw2_dump_yesterday_filename)
+    #os.rename(config.ngw1_dump_today_filename,config.ngw1_dump_yesterday_filename)
+    #os.rename(config.ngw2_dump_today_filename,config.ngw2_dump_yesterday_filename)
