@@ -13,6 +13,7 @@ import os
 import json
 from osgeo import ogr, gdal
 from osgeo import osr
+import urllib2
 
 class ngw_synchroniser:
 
@@ -23,7 +24,8 @@ class ngw_synchroniser:
 
         self.ForceToMultiGeom = False #В ngw api v2 надо было ставить True, но эта версия больше не поддерживается, поэтому всегда False
         self.delta = 0.00000001 #Using in compare points 
-        self.ngw_url = cfg['ngw_url']+'/api/resource/'
+        self.ngw_url = cfg['ngw_url'] + '/api/resource/'
+        self.ngw_root = cfg['ngw_url']
         self.resid=cfg['ngw_resource_id']
         self.ngw_creds = (cfg['ngw_creds'])
 
@@ -367,8 +369,8 @@ class ngw_synchroniser:
             #Если в новом дампе не найдена запись с id из старого, значит в слое запись удалилась, добавляем в чейнджсет DELETE (содержимое записи из старого дампа)
             if (old_id not in dumpnew_sorted):
                 print 'Feature ' + str(old_id) + ' deleted. DELETE'
-                changeset_element=dict()
-                changeset_element=dumpold_sorted[old_id]
+                changeset_element = dict()
+                changeset_element = dumpold_sorted[old_id]
                 changeset['DELETE'].append(changeset_element)
                 continue
             #Если переменные разные, - такая ситуация возникнуть не должна #значит в слое запись изменилась, то добавляем в чейнджсет PUT(запись из нового дампа). Если атачменты разные, то делаем запись чейнджсета по атачментам
@@ -387,16 +389,14 @@ class ngw_synchroniser:
             #если в старом дампе нет id такого же как в новом, то добавляем в чейнджсет POST(содержимое записи)
             if (new_id not in dumpold_sorted):
                 print 'Feature ' + str(old_id) + ' added. POST'
-                changeset_element=dict()
-                changeset_element=dumpnew_sorted[new_id]
+                changeset_element = dict()
+                changeset_element = dumpnew_sorted[new_id]
                 changeset['POST'].append(changeset_element)
                 continue
 
-        #Vj;
-        pp.pprint(changeset)
         return changeset
 
-    def applyChangeset(self,changeset,layer_id):
+    def applyChangeset(self,changeset,layer_id,source_ngw_url,source_layer_id):
         ''' 
         Apply changeset for layer. Make REST calls.
         
@@ -415,15 +415,42 @@ class ngw_synchroniser:
                 if (feature['extensions']['attachment'] != None):
                     #Проходим по списку атачментов
                     for attachment in feature['extensions']['attachment']:
-                        print 'upload attachment '+attachment['name']
-                        #Грузим атачмент, добавляем в массив json-ответ от сервера
+                        print 'upload attachment ' + attachment['name']
+                        attachment_url=source_ngw_url + '/api/resource/' + source_layer_id + '/feature/' + str(feature['id']) + '/attachment/' + str(attachment['id']) + '/download'
+                        print attachment_url
+                        headers = {'Content-type': 'multipart/form-data'}
+                        files={'file':urllib2.urlopen(attachment_url)}
+                        payload={
+                            'file':'\tmp\test.file',
+                            'name':'vaporwave'
+                        }
+                        print self.ngw_root + '/api/component/file_upload/upload'
+                        req = requests.put(self.ngw_root + '/api/component/file_upload/upload',  files=files, auth=self.ngw_creds, headers=headers)
+                        print req.json()
+
+                        print 'Грузим атачмент, добавляем в массив json-ответ от сервера не реализовано'
                 
                 #Составляем payload с полями, добавляем атачмент
+                #pp.pprint(feature)
+                
                 print 'create payload for POST'
+                #use existing simple method
+                payload = self.createPayload(feature)
+                payload['extensions']=dict()
+                print 'тут проверяем, нужно ли добавить к payload - атачменты'
+                # append description
+                # не работает, см. https://github.com/nextgis/nextgisweb/issues/543
+                payload['extensions']['description'] = feature['extensions']['description']
+                pp.pprint(payload)
+                req = requests.post(self.ngw_url + str(layer_id) + '/feature/', data=json.dumps(payload), auth=self.ngw_creds)
+                quit()
+
         #Если запись DELETE
         if (changeset['POST'] != None):
             print 'Получаем сейчас весь слой из веба, что бы найти в нём записи, которые надо удалить'
             #Находим через REST в слое запись с такими же полями и атрибутами.
+            print 'Получаем GeoJSON'
+            
             #Грохаем запись
             #В случае             
 
