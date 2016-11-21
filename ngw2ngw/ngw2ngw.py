@@ -82,10 +82,10 @@ if __name__ == '__main__':
         changeset2=processor1.compareDumps(dump2new,dump2old)
 
         #apply changeset from 1 to 2
-        processor2.applyChangeset(changeset1,config.ngw2_resource_id)    
+        processor2.applyChangeset(changeset1,config.ngw2_resource_id,source_ngw_url=config.ngw1_url,source_layer_id=config.ngw1_resource_id)    
 
         #apply changeset from 2 to 1
-        processor1.applyChangeset(changeset2,config.ngw1_resource_id)
+        #processor1.applyChangeset(changeset2,config.ngw1_resource_id)
 
     #save today dump as yesterday dump 
 
