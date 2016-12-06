@@ -411,22 +411,18 @@ class ngw_synchroniser:
         #Проходим по чейнджсету
         if (changeset['POST'] != None):
             for feature in changeset['POST']:
-                #Если есть атачменты
+                #Если есть атачменты то загружаем их вначале
                 if (feature['extensions']['attachment'] != None):
                     #Проходим по списку атачментов
                     for attachment in feature['extensions']['attachment']:
                         print 'upload attachment ' + attachment['name']
                         attachment_url=source_ngw_url + '/api/resource/' + source_layer_id + '/feature/' + str(feature['id']) + '/attachment/' + str(attachment['id']) + '/download'
                         print attachment_url
-                        headers = {'Content-type': 'multipart/form-data'}
-                        files={'file':urllib2.urlopen(attachment_url)}
-                        payload={
-                            'file':'\tmp\test.file',
-                            'name':'vaporwave'
-                        }
-                        print self.ngw_root + '/api/component/file_upload/upload'
-                        req = requests.put(self.ngw_root + '/api/component/file_upload/upload',  files=files, auth=self.ngw_creds, headers=headers)
-                        print req.json()
+                        headers = {'Content-type': 'application/x-www-form-urlencoded'}
+                        payload={'file':urllib2.urlopen(attachment_url),'name':attachment['name']}
+                        print 'Upload attachment to ' + self.ngw_root + '/api/component/file_upload/upload'
+                        #req = requests.post(self.ngw_root + '/api/component/file_upload/upload',  data=payload, auth=self.ngw_creds, headers=headers)
+                        #print req.text
 
                         print 'Грузим атачмент, добавляем в массив json-ответ от сервера не реализовано'
                 
@@ -438,15 +434,17 @@ class ngw_synchroniser:
                 payload = self.createPayload(feature)
                 payload['extensions']=dict()
                 print 'тут проверяем, нужно ли добавить к payload - атачменты'
-                # append description
-                # не работает, см. https://github.com/nextgis/nextgisweb/issues/543
-                payload['extensions']['description'] = feature['extensions']['description']
+
+                # 
+                # append description не работает, см. https://github.com/nextgis/nextgisweb/issues/543
+                #payload['extensions']['description'] = feature['extensions']['description']
+                
                 pp.pprint(payload)
                 req = requests.post(self.ngw_url + str(layer_id) + '/feature/', data=json.dumps(payload), auth=self.ngw_creds)
-                quit()
+                #quit()
 
         #Если запись DELETE
-        if (changeset['POST'] != None):
+        if (changeset['DELETE'] != None):
             print 'Получаем сейчас весь слой из веба, что бы найти в нём записи, которые надо удалить'
             #Находим через REST в слое запись с такими же полями и атрибутами.
             print 'Получаем GeoJSON'
