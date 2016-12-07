@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Project: Two-directional synchrosnisation of 2 ngw layers
+# Project: Валидатор наличия в QMS слоёв из набора OSMLAB
 # Author: Artem Svetlov <artem.svetlov@nextgis.com>
 # Copyright: 2016, NextGIS <info@nextgis.com>
 
