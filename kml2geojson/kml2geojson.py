@@ -4,10 +4,10 @@
 # kml2geojson.py
 # ---------------------------------------------------------
 # Convert from KML to GeoJSON and keep colors. Points only yet.
-# More: http://github.com/nextgis/dhi
+# More: https://github.com/nextgis/nextgisweb_helper_scripts
 #
 # Usage: 
-#      kml_extended2csv.py [-h] [-c] input output
+#      kml2geojson.py [-h] [-c] input output
 #      where:
 #           -h          show this help message and exit
 #           input       input KML
@@ -34,9 +34,6 @@
 # MA 02111-1307, USA.
 #
 #******************************************************************************
-
-import sys
-import os
 from bs4 import BeautifulSoup
 import geojson
 import argparse
