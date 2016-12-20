@@ -52,7 +52,7 @@ def downloadqms():
         with open('qms.json', 'wb') as outfile:
             json.dump(newlist, outfile)
 
-    quit('теперь закомментируйте вызов downloadqms() и перезапускайте')        
+    #quit('теперь закомментируйте вызов downloadqms() и перезапускайте')        
 
 def openqmsfile():
 
