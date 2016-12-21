@@ -4,22 +4,13 @@
 # Author: Artem Svetlov <artem.svetlov@nextgis.com>
 # Copyright: 2016, NextGIS <info@nextgis.com>
 
-
-
-
-
-
-
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import urllib
 import json
 from pprint import pprint
 import os
 import urlparse
 import re
-
+import csv
 
 def import_qms1():
     url='https://qms.nextgis.com/api/v1/geoservices/?format=json'
@@ -78,8 +69,6 @@ def getLayerDomain(url):
         subdomain=None
     return subdomain
 
-
-
 if __name__ == '__main__':
 
 
@@ -88,31 +77,24 @@ if __name__ == '__main__':
     
     #read file from github
     url='https://raw.githubusercontent.com/osmlab/editor-layer-index/gh-pages/imagery.json'
-    filename='imagery.json'
+    response = urllib.urlopen(url)
+    data = json.loads(response.read())
+    print('Fresh OSMLab imagery.json dowloaded')
 
-
-    with open('imagery.json') as data_file:    
-        data = json.load(data_file)
-    #read intomemory
-
-
-    import csv
     fieldnames = ['name', 'type', 'url','likely_already_qms','likely_qms_layers', 'overlay','license_url','attribution_text','attribution_url','available_projections','id']
-    with open('validator.csv', 'wb') as csvfile:
-        spamwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',
-                                quotechar='"', quoting=csv.QUOTE_ALL)
+    with open('list.csv', 'wb') as csvfile:
+        listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
 
-    #pprint(data)
+    #pprint(data)   
         headers = {} 
         for n in fieldnames:
             headers[n] = n
-        spamwriter.writerow(headers)
+        listwriter.writerow(headers)
 
         for layer in data:
 
 
             #   Search in qms for layer with same domain
-           
             osmlab_layer_domain=getLayerDomain(layer.get('url'))
             likely_already_qms = False
             likely_qms_layers = []
@@ -125,10 +107,6 @@ if __name__ == '__main__':
 
 
             #   /Search
-                    
-
-
-
 
             row=dict()
             row['id'] = layer.get('id')
@@ -151,9 +129,6 @@ if __name__ == '__main__':
             #row['attribution_text'] = layer.get('attribution',{'text':''}).get('text')
             #row['attribution_url'] = layer.get('attribution').get('url')
 
-
-
-
-            spamwriter.writerow(row)
+            listwriter.writerow(row)
 
     #print list to screen

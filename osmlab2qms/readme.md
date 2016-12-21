@@ -1,7 +1,5 @@
 Валидатор наличия в QMS слоёв из набора OSMLAB
 
-
-
 Первая половина скрипта для импорта слоёв из osmlab в Quick map services. Этот скрипт генерирует таблицу со слоями, что бы их скопировать вручную в Quick map servives
 Потом обнаружили, что у QMS нет API импорта и отложили.
 
@@ -23,5 +21,5 @@ https://osmlab.github.io/editor-layer-index/ - сборник слоёв для 
 # Использование
 
 1. git clone
-2. Скачать и положить сюда https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.json
-3. python run.py
+2. python run.py
+3. Посмотреть результат - list.csv
