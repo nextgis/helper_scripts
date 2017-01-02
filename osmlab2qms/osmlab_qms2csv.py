@@ -78,6 +78,9 @@ def url_osmlab2qms(url):
 
     return url
 
+def getLayers(url):
+
+
 if __name__ == '__main__':
 
     #downloadqms()
@@ -89,10 +92,10 @@ if __name__ == '__main__':
     data = json.loads(response.read())
     print('Fresh OSMLab imagery.json dowloaded')
 
-    fieldnames = ['id', 'name', 'type', 'url','url_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'likely_already_qms','likely_qms_layers']
+    fieldnames = ['id', 'name', 'type', 'url','url_qms','layers_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'likely_already_qms','likely_qms_layers']
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
-    
+        layers = ''
         headers = {} 
         for n in fieldnames:
             headers[n] = n
@@ -136,6 +139,7 @@ if __name__ == '__main__':
             row['likely_already_qms'] = likely_already_qms
             row['likely_qms_layers'] = likely_qms_layers
             row['available_projections'] = layer.get('available_projections')
+            row['qms_layers'] = layers
             if 'attribution' in layer:
                 if 'text' in layer['attribution']:
                     row['attribution_text'] = layer['attribution']['text'].encode('utf8')            
