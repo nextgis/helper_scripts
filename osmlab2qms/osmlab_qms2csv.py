@@ -79,7 +79,7 @@ def url_osmlab2qms(url):
     return url
 
 def getLayers(url):
-
+    pass
 
 if __name__ == '__main__':
 
@@ -139,7 +139,7 @@ if __name__ == '__main__':
             row['likely_already_qms'] = likely_already_qms
             row['likely_qms_layers'] = likely_qms_layers
             row['available_projections'] = layer.get('available_projections')
-            row['qms_layers'] = layers
+            row['layers_qms'] = layers
             if 'attribution' in layer:
                 if 'text' in layer['attribution']:
                     row['attribution_text'] = layer['attribution']['text'].encode('utf8')            
