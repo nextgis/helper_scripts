@@ -68,19 +68,51 @@ def getLayerDomain(url):
         subdomain=None
     return subdomain
 
-def url_osmlab2qms(url):
-    regex = r'\{switch:.*?\}'
-    pt = re.compile(regex)
-    res = pt.search(url)
-    switch = res.group(0)
-    new_val =  switch.split(':')[1].split(',')[0]
-    url = re.sub(regex,new_val,url)
-
+def url_osmlabTMS2qms(url):
+    if 'switch' in url:
+        regex = r'\{switch:.*?\}'
+        pt = re.compile(regex)
+        res = pt.search(url)
+        switch = res.group(0)
+        new_val =  switch.split(':')[1].split(',')[0]
+        url = re.sub(regex,new_val,url)
+    url = url.replace('{zoom}','{z}')
+    url = url.replace('{zoom-1}','{z-1}')
+    
     return url
 
-def getLayers(url):
-    pass
+def url_osmlabWMS2qms(url):
+    url = url.split("?")[0]
+    return url
+    
+def getLayersWMS(url):
+    list = url.split("?")[1].split("&")
+    params = dict(map(None,x.split('=')) for x in list)
+    params = dict((k.upper(), v) for k,v in params.iteritems())
+    layers = params['LAYERS']
+    
+    return layers
 
+def getFormatWMS(url):
+    list = url.split("?")[1].split("&")
+    params = dict(map(None,x.split('=')) for x in list)
+    params = dict((k.upper(), v) for k,v in params.iteritems())
+    format = ''
+    if 'FORMAT' in params:
+        format = params['FORMAT']
+    
+    return format
+    
+def getParamsWMS(url):
+    list = url.split("?")[1].split("&")
+    params = dict(map(None,x.split('=')) for x in list)
+    params = dict((k.upper(), v) for k,v in params.iteritems())
+    getparams = ''
+    for param in params:
+        if param != 'LAYERS' and param != 'FORMAT' and params[param] != '':
+            getparams = getparams + '&' + param + '=' + params[param]
+    return getparams
+    
 if __name__ == '__main__':
 
     #downloadqms()
@@ -92,10 +124,10 @@ if __name__ == '__main__':
     data = json.loads(response.read())
     print('Fresh OSMLab imagery.json dowloaded')
 
-    fieldnames = ['id', 'name', 'type', 'url','url_qms','layers_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'likely_already_qms','likely_qms_layers']
+    fieldnames = ['id', 'name', 'type', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'likely_already_qms','likely_qms_layers']
+    
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
-        layers = ''
         headers = {} 
         for n in fieldnames:
             headers[n] = n
@@ -119,17 +151,16 @@ if __name__ == '__main__':
 
             row=dict()
             row['id'] = layer.get('id')
-            row['url'] = layer.get('url')
-            if '{zoom}' in row['url']:
-                row['url'] = row['url'].replace('{zoom}','{z}')
-                
-            if 'switch' in row['url']:
-                row['url_qms'] = url_osmlab2qms(row['url'])
-            else:
-                row['url_qms'] = row['url']
-
             row['name'] = layer.get('name').encode('utf8')
             row['type'] = layer.get('type')
+            
+            row['url'] = layer.get('url')
+            print row['url']
+            if row['type'] == 'tms':
+                row['url_qms'] = url_osmlabTMS2qms(row['url'])
+            elif row['type'] == 'wms':
+                row['url_qms'] = url_osmlabWMS2qms(row['url']) + '?'
+                
             row['start_date'] = layer.get('start_date')
             row['end_date'] = layer.get('end_date')
             row['country_code'] = layer.get('country_code')
@@ -139,7 +170,10 @@ if __name__ == '__main__':
             row['likely_already_qms'] = likely_already_qms
             row['likely_qms_layers'] = likely_qms_layers
             row['available_projections'] = layer.get('available_projections')
-            row['layers_qms'] = layers
+            if row['type'] == 'wms':
+                row['layers_qms'] = getLayersWMS(row['url'])
+                row['format_qms'] = getFormatWMS(row['url'])
+                row['getparams_qms'] = getParamsWMS(row['url']).lstrip('&')
             if 'attribution' in layer:
                 if 'text' in layer['attribution']:
                     row['attribution_text'] = layer['attribution']['text'].encode('utf8')            
