@@ -1,0 +1,13 @@
+ScanEx-IRS
+ScanEx-SPOT
+LPI_NSW_Administrative_Boundaries_County
+Bing
+landsat
+hike_n_bike
+openpt_map
+MAPNIK
+stamen-terrain-background
+tf-cycle
+tf-landscape
+Pangasinan_Bulacan_HiRes
+AGRI-black_and_white-2.5m
