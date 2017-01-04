@@ -75,7 +75,7 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attrib
     pyautogui.press('tab')
     #pyautogui.press('enter')
 
-def add_service_wms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url):
+def add_service_wms(name,url,layers,description,source,prj,format,getparams,license_url,attribution_text,attribution_url):
     interval = 0.05
 
     #click new service
@@ -144,46 +144,53 @@ def add_service_wms(name,url,description,source,prj,zmin,zmax,license_url,attrib
     raw_input("Press Enter to continue...")
 
 if __name__ == '__main__':
-
+    
+    #read noimport list
+    with open("noimport.txt") as f:
+        noimport = f.readlines()
+        noimport = [x.strip('\n') for x in noimport]
+    
     f_csv = "list.csv"
     with open(f_csv, 'rb') as csvfile:
         csvreader = csv.DictReader(csvfile, delimiter=';')
 
         for row in csvreader:
-            t = row['type']
+            if row['id'] not in noimport:
+                t = row['type']
 
-            name = row['name']
-            url = row['url_qms']
-            
-            description = 'This service is imported from OSMLab. OSMLab id: ' + row['id']
-            source = 'https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.geojson'
+                name = row['name']
+                url = row['url_qms']
+                layers = row['layers_qms']
+                
+                description = 'This service is imported from OSMLab. OSMLab id: ' + row['id']
+                source = 'https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.geojson'
 
-            prjs = row['available_projections']
-            prjs_arr = [i.split(':')[1] for i in prjs]
+                prjs = row['available_projections']
+                prjs_arr = [i.split(':')[1] for i in prjs]
 
-            if '3857' in prjs_arr:
-                prj = '3857'
-            elif '4326' in prjs_arr:
-                prj = '4326'
-            elif len(prjs_arr) == 0:
-                prj = '3857'
-            else:
-                prj = prjs_arr[0]
+                if '3857' in prjs_arr:
+                    prj = '3857'
+                elif '4326' in prjs_arr:
+                    prj = '4326'
+                elif len(prjs_arr) == 0:
+                    prj = '3857'
+                else:
+                    prj = prjs_arr[0]
+                
+                format = row['format_qms']
+                getparams = row['getparams_qms']
+                zmin = row['min_zoom']
+                zmax = row['max_zoom']
 
-            zmin = row['min_zoom']
-            zmax = row['max_zoom']
+                license_url = row['license_url']
+                attribution_text = row['attribution_text']
+                attribution_url = row['attribution_url']
 
-            license_url = row['license_url']
-            attribution_text = row['attribution_text']
-            attribution_url = row['attribution_url']
-
-            if t == 'tms':
-                add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url)
-                #continue
-            elif t == 'wms':
-                add_service_wms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url)
-                continue
-            else:
-                continue
+                if t == 'tms':
+                    add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url)
+                elif t == 'wms':
+                    add_service_wms(name,url,layers,description,source,prj,format,getparams,license_url,attribution_text,attribution_url)
+                else:
+                    continue
 
 
