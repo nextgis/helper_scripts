@@ -12,21 +12,15 @@ import urlparse
 import re
 import csv
 
-def import_qms():
+def downloadqms():
+    #qmslist=import_qms()
     url='https://qms.nextgis.com/api/v1/geoservices/?format=json'
     filename='qms.json'
     testfile = urllib.URLopener()
     testfile.retrieve(url, filename)
-
-    #response = urllib.urlopen(url)
-    #data = json.loads(response.read())
     with open(filename) as data_file:    
-        data = json.load(data_file)
-    #read intomemory
-    return data
+        qmslist = json.load(data_file)
 
-def downloadqms():
-    qmslist=import_qms()
     newlist=[]
     os.unlink('qms.json')
     for layer in qmslist:
@@ -39,14 +33,11 @@ def downloadqms():
 
         #print layer
         newlist.append(layer)
-        with open('qms.json', 'wb') as outfile:
+        with open('qms_full.json', 'wb') as outfile:
             json.dump(newlist, outfile)
 
-    #quit('теперь закомментируйте вызов downloadqms() и перезапускайте')        
-
 def openqmsfile():
-
-    with open('qms.json') as data_file:
+    with open('qms_full.json') as data_file:
         data = json.load(data_file)
 
     return data
@@ -67,6 +58,36 @@ def getLayerDomain(url):
     except:
         subdomain=None
     return subdomain
+
+def prepare_url(url):
+    url = url.replace('//a.','//')
+    url = url.replace('http://','')
+    url = url.replace('https://','')
+    url = url.rstrip('?')
+    url = url.upper()
+
+    return url
+
+def find_qmsTMS(url):
+    #   Search in qms for layer
+    qmslist=openqmsfile()
+    exist_qms = False
+    for qmslayer in qmslist:
+        if prepare_url(url) in qmslayer['url'].upper():
+                exist_qms = True
+
+    return exist_qms
+
+def find_qmsWMS(url,layers):
+    #   Search in qms for layer
+    qmslist=openqmsfile()
+    exist_qms = False
+    for qmslayer in qmslist:
+        if prepare_url(url) in qmslayer['url'].upper() and qmslayer['type'] == 'wms':
+            if qmslayer['layers'].upper() == layers.upper():
+                exist_qms = True
+
+    return exist_qms
 
 def url_osmlabTMS2qms(url):
     if 'switch' in url:
@@ -115,7 +136,7 @@ def getParamsWMS(url):
     
 if __name__ == '__main__':
 
-    #downloadqms()
+    if not os.path.exists('qms_full.json'): downloadqms()
     qmslist=openqmsfile()
     
     #read file from github
@@ -124,7 +145,7 @@ if __name__ == '__main__':
     data = json.loads(response.read())
     print('Fresh OSMLab imagery.json dowloaded')
 
-    fieldnames = ['id', 'name', 'type', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'likely_already_qms','likely_qms_layers']
+    fieldnames = ['id', 'name', 'type', 'exist_qms', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections']
     
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
@@ -134,21 +155,6 @@ if __name__ == '__main__':
         listwriter.writerow(headers)
     
         for layer in data:
-    
-            #   Search in qms for layer with same domain
-            osmlab_layer_domain=getLayerDomain(layer.get('url'))
-            likely_already_qms = False
-            likely_qms_layers = []
-            for qmslayer in qmslist:
-                #print qmslayer
-                if qmslayer['type'].upper() == layer.get('type').upper():
-                    if getLayerDomain(qmslayer['url']) == getLayerDomain(layer.get('url')):
-                        likely_already_qms = True
-                        likely_qms_layers.append(qmslayer['url'])
-
-
-            #   /Search
-
             row=dict()
             row['id'] = layer.get('id')
             row['name'] = layer.get('name').encode('utf8')
@@ -167,8 +173,6 @@ if __name__ == '__main__':
             row['best'] = layer.get('best')
             row['overlay'] = layer.get('overlay')
             row['license_url'] = layer.get('license_url')
-            row['likely_already_qms'] = likely_already_qms
-            row['likely_qms_layers'] = likely_qms_layers
             row['available_projections'] = layer.get('available_projections')
             if row['type'] == 'wms':
                 row['layers_qms'] = getLayersWMS(row['url'])
@@ -185,9 +189,11 @@ if __name__ == '__main__':
                     row['max_zoom'] = layer['extent']['max_zoom']
                 if 'min_zoom' in layer['extent']:
                     row['min_zoom'] = layer['extent']['min_zoom']
-            #print layer
-            #quit()
-            #row['attribution_text'] = layer.get('attribution',{'text':''}).get('text')
-            #row['attribution_url'] = layer.get('attribution').get('url')
 
+            exist_qms = ''
+            if row['type'] == 'tms':
+                exist_qms = find_qmsTMS(row['url_qms'])
+            elif row['type'] == 'wms':
+                exist_qms = find_qmsWMS(row['url_qms'],row['layers_qms'])
+            row['exist_qms'] = exist_qms
             listwriter.writerow(row)

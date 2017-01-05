@@ -75,7 +75,7 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attrib
     pyautogui.press('tab')
     #pyautogui.press('enter')
 
-def add_service_wms(name,url,layers,description,source,prj,format,getparams,license_url,attribution_text,attribution_url):
+def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url):
     interval = 0.05
 
     #click new service
@@ -84,7 +84,7 @@ def add_service_wms(name,url,layers,description,source,prj,format,getparams,lice
     time.sleep(10)
 
     #select service
-    pyautogui.moveTo(700, 500)
+    pyautogui.moveTo(900, 500)
     pyautogui.click()
     time.sleep(10)
 
@@ -95,6 +95,10 @@ def add_service_wms(name,url,layers,description,source,prj,format,getparams,lice
     #enter service url
     pyautogui.press('tab')
     pyautogui.typewrite(url, interval=interval)
+
+    #enter layers
+    pyautogui.press('tab')
+    pyautogui.typewrite(layers, interval=interval)    
 
     #enter description
     pyautogui.press('tab')
@@ -109,13 +113,16 @@ def add_service_wms(name,url,layers,description,source,prj,format,getparams,lice
     pyautogui.press('tab')
     pyautogui.typewrite(prj, interval=interval)
 
-    #minzoom
+    #image format
     pyautogui.press('tab')
-    pyautogui.typewrite(zmin, interval=interval)
+    pyautogui.press('tab')
+    pyautogui.press('tab')
+    pyautogui.press('escape')
+    #pyautogui.typewrite(imageformat, interval=interval)
 
-    #maxzoom
+    #get params
     pyautogui.press('tab')
-    pyautogui.typewrite(zmax, interval=interval)
+    pyautogui.typewrite(getparams, interval=interval)
 
     #license_url
     pyautogui.press('tab')
@@ -155,10 +162,11 @@ if __name__ == '__main__':
         csvreader = csv.DictReader(csvfile, delimiter=';')
 
         for row in csvreader:
-            if row['id'] not in noimport:
+            if row['id'] not in noimport and row['exist_qms'] == 'False':
                 t = row['type']
 
                 name = row['name']
+                print name
                 url = row['url_qms']
                 layers = row['layers_qms']
                 
@@ -166,7 +174,10 @@ if __name__ == '__main__':
                 source = 'https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.geojson'
 
                 prjs = row['available_projections']
-                prjs_arr = [i.split(':')[1] for i in prjs]
+                if prjs != '':
+                    prjs_arr = [i.split(':')[1] for i in eval(prjs)]
+                else:
+                    prjs_arr = []
 
                 if '3857' in prjs_arr:
                     prj = '3857'
@@ -177,7 +188,7 @@ if __name__ == '__main__':
                 else:
                     prj = prjs_arr[0]
                 
-                format = row['format_qms']
+                imageformat = row['format_qms']
                 getparams = row['getparams_qms']
                 zmin = row['min_zoom']
                 zmax = row['max_zoom']
@@ -187,9 +198,10 @@ if __name__ == '__main__':
                 attribution_url = row['attribution_url']
 
                 if t == 'tms':
-                    add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url)
+                    #add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url)
+                    continue
                 elif t == 'wms':
-                    add_service_wms(name,url,layers,description,source,prj,format,getparams,license_url,attribution_text,attribution_url)
+                    add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
                 else:
                     continue
 
