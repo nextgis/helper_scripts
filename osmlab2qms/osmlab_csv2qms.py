@@ -7,19 +7,18 @@
 import time
 import pyautogui
 import csv
+import countryinfo
 
 def add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url):
-    interval = 0.05
-
     #click new service
     pyautogui.moveTo(1500, 150)
     pyautogui.click()
-    time.sleep(10)
+    time.sleep(sleep)
 
     #select service
     pyautogui.moveTo(700, 500)
     pyautogui.click()
-    time.sleep(10)
+    time.sleep(sleep)
 
     #enter service name
     pyautogui.press('tab')
@@ -73,20 +72,19 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attrib
 
     #Save
     pyautogui.press('tab')
-    #pyautogui.press('enter')
+    pyautogui.press('enter')
+    #raw_input("Press Enter to continue...")
 
 def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url):
-    interval = 0.05
-
     #click new service
     pyautogui.moveTo(1500, 150)
     pyautogui.click()
-    time.sleep(10)
+    time.sleep(sleep)
 
     #select service
     pyautogui.moveTo(900, 500)
     pyautogui.click()
-    time.sleep(10)
+    time.sleep(sleep)
 
     #enter service name
     pyautogui.press('tab')
@@ -116,9 +114,13 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
     #image format
     pyautogui.press('tab')
     pyautogui.press('tab')
-    pyautogui.press('tab')
+
+    imageformat = imageformat.split('/')[1].upper()
+    ntabs = imageformats.index(imageformat) + 1
+
+    for i in xrange(ntabs): pyautogui.press('tab')
+    pyautogui.press('space')
     pyautogui.press('escape')
-    #pyautogui.typewrite(imageformat, interval=interval)
 
     #get params
     pyautogui.press('tab')
@@ -147,11 +149,14 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
 
     #Save
     pyautogui.press('tab')
-    #pyautogui.press('enter')
-    raw_input("Press Enter to continue...")
+    pyautogui.press('enter')
+    #raw_input("Press Enter to continue...")
 
 if __name__ == '__main__':
-    
+    sleep = 3 #seconds
+    interval = 0.05
+    imageformats = ['PNG','PNG8','PNG24','PNG32','GIF','BMP','JPEG','TIFF','TIFF8','GEOTIFF','GEOTIFF8','SVG']
+
     #read noimport list
     with open("noimport.txt") as f:
         noimport = f.readlines()
@@ -162,7 +167,7 @@ if __name__ == '__main__':
         csvreader = csv.DictReader(csvfile, delimiter=';')
 
         for row in csvreader:
-            if row['id'] not in noimport and row['exist_qms'] == 'False':
+            if row['id'] not in noimport and row['exist_qms'] == 'False' and len(row['url_qms']) < 500:
                 t = row['type']
 
                 name = row['name']
@@ -170,7 +175,12 @@ if __name__ == '__main__':
                 url = row['url_qms']
                 layers = row['layers_qms']
                 
-                description = 'This service is imported from OSMLab. OSMLab id: ' + row['id']
+                cntry = [x for x in countryinfo.countries if x['code'] == row['country_code']]
+                if len(cntry) != 0:
+                    description = 'This service is imported from OSMLab. OSMLab id: ' + row['id'] + '. Country: ' + cntry[0]['name']
+                else:
+                    description = 'This service is imported from OSMLab. OSMLab id: ' + row['id']
+
                 source = 'https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.geojson'
 
                 prjs = row['available_projections']
@@ -198,11 +208,13 @@ if __name__ == '__main__':
                 attribution_url = row['attribution_url']
 
                 if t == 'tms':
-                    #add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url)
-                    continue
+                    add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url)
+                    #print url
                 elif t == 'wms':
                     add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
+                    #print url
                 else:
                     continue
 
+                time.sleep(sleep)
 

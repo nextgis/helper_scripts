@@ -61,8 +61,8 @@ def getLayerDomain(url):
 
 def prepare_url(url):
     url = url.replace('//a.','//')
-    url = url.replace('http://','')
-    url = url.replace('https://','')
+    url = url.replace('http://','',1)
+    url = url.replace('https://','',1)
     url = url.rstrip('?')
     url = url.upper()
 

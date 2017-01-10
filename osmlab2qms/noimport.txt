@@ -1,2 +1,8 @@
 openpt_map
 stamen-terrain-background
+landsat
+IDEIB-Balearic_Islands
+Delaware2012Orthophotography
+geodata.md.gov-MD_SixInchImagery
+geodata.md.gov-MD_ColorBasemap
+geodata.state.nj.us-Infrared2015
