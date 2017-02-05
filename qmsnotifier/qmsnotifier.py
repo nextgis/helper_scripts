@@ -6,7 +6,7 @@ import json
 import os
 
 #################BOT TOKEN##################
-token = open('token').read()
+token = open('token').read().rstrip('\n')
 #################BOT TOKEN##################
 
 method = 'sendMessage'
@@ -41,6 +41,7 @@ def notify(type,link,name,submitter):
     print(response)
     
 if __name__ == '__main__':
+    #os.chdir('/home/sim/helper_scripts/qmsnotifier')
     os.remove("qms_old.json")
     os.rename("qms.json","qms_old.json")
     qmslist_new = downloadqms()
