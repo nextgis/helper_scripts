@@ -11,7 +11,7 @@ token = open('token').read().rstrip('\n')
 #################BOT TOKEN##################
 
 method = 'sendMessage'
-chat_id = -1001104876475
+chat_id = -1001084564203
 
 def downloadqms():
     url='https://qms.nextgis.com/api/v1/geoservices/?format=json'
