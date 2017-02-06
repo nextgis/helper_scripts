@@ -4,6 +4,7 @@ import requests
 import urllib
 import json
 import os
+from bs4 import BeautifulSoup
 
 #################BOT TOKEN##################
 token = open('token').read().rstrip('\n')
@@ -30,6 +31,14 @@ def find_qms(id):
                 exist_qms = True
 
     return exist_qms
+
+def get_name(guid):
+    userpage = urllib.urlopen('https://my.nextgis.com/public_profile/' + guid).read()
+    soup = BeautifulSoup(userpage, 'html.parser')
+    divs = soup.findAll("div", { "class" : "form-group label-floating clearfix" })
+    username = divs[0].next_element.next_element.next_element.next_element.strip(' ').strip('\n').strip(' ')
+    
+    return username
     
 def notify(type,link,name,submitter):
     text = u'Новый %s сервис в QMS %s\n %s\n Добавил: %s' % (type,link,name,submitter)
@@ -56,5 +65,5 @@ if __name__ == '__main__':
             type = item['type'].upper()
             link = 'https://qms.nextgis.com/geoservices/' + str(item['id'])
             name = item['name']
-            submitter = item['submitter']
+            submitter = get_name(item['submitter'])
             notify(type,link,name,submitter)
