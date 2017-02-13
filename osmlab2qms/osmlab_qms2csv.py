@@ -140,7 +140,7 @@ if __name__ == '__main__':
     qmslist=openqmsfile()
     
     #read file from github
-    url='https://raw.githubusercontent.com/osmlab/editor-layer-index/gh-pages/imagery.json'
+    url='https://github.com/osmlab/editor-layer-index/raw/gh-pages/imagery.json'
     response = urllib.urlopen(url)
     data = json.loads(response.read())
     print('Fresh OSMLab imagery.json dowloaded')
@@ -156,16 +156,28 @@ if __name__ == '__main__':
     
         for layer in data:
             row=dict()
-            row['id'] = layer.get('id')
-            row['name'] = layer.get('name').encode('utf8')
             row['type'] = layer.get('type')
-            
             row['url'] = layer.get('url')
             print row['url']
             if row['type'] == 'tms':
                 row['url_qms'] = url_osmlabTMS2qms(row['url'])
             elif row['type'] == 'wms':
+                row['layers_qms'] = getLayersWMS(row['url'])
+                row['format_qms'] = getFormatWMS(row['url'])
+                row['getparams_qms'] = getParamsWMS(row['url']).lstrip('&')
                 row['url_qms'] = url_osmlabWMS2qms(row['url']) + '?'
+
+            #Check if services already exists in QMS based on it's url
+            exist_qms = ''
+            if row['type'] == 'tms':
+                exist_qms = find_qmsTMS(row['url_qms'])
+            elif row['type'] == 'wms':
+                exist_qms = find_qmsWMS(row['url_qms'],row['layers_qms'])
+            row['exist_qms'] = exist_qms
+
+            row['id'] = layer.get('id')
+            row['name'] = layer.get('name').encode('utf8')
+            
                 
             row['start_date'] = layer.get('start_date')
             row['end_date'] = layer.get('end_date')
@@ -174,10 +186,7 @@ if __name__ == '__main__':
             row['overlay'] = layer.get('overlay')
             row['license_url'] = layer.get('license_url')
             row['available_projections'] = layer.get('available_projections')
-            if row['type'] == 'wms':
-                row['layers_qms'] = getLayersWMS(row['url'])
-                row['format_qms'] = getFormatWMS(row['url'])
-                row['getparams_qms'] = getParamsWMS(row['url']).lstrip('&')
+
             if 'attribution' in layer:
                 if 'text' in layer['attribution']:
                     row['attribution_text'] = layer['attribution']['text'].encode('utf8')            
@@ -190,10 +199,4 @@ if __name__ == '__main__':
                 if 'min_zoom' in layer['extent']:
                     row['min_zoom'] = layer['extent']['min_zoom']
 
-            exist_qms = ''
-            if row['type'] == 'tms':
-                exist_qms = find_qmsTMS(row['url_qms'])
-            elif row['type'] == 'wms':
-                exist_qms = find_qmsWMS(row['url_qms'],row['layers_qms'])
-            row['exist_qms'] = exist_qms
             listwriter.writerow(row)
