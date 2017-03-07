@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Project: Upload service definitions from CSV (pregenerated from OSMLAB) to QMS
+# Project: Upload service definitions from CSV (pregenerated from OSMLAB, data.mos.ru etc.) to QMS
 # Author: Maxim Dubinin <maxim.dubinin@nextgis.com>
-# Copyright: 2016, NextGIS <info@nextgis.com>
+# Copyright: 2016-present, NextGIS <info@nextgis.com>
 
 import time
 import pyautogui
@@ -152,6 +152,9 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
     pyautogui.press('enter')
     #raw_input("Press Enter to continue...")
 
+def add_service_geojson():
+
+
 if __name__ == '__main__':
     sleep = 3 #seconds
     interval = 0.05
@@ -213,6 +216,8 @@ if __name__ == '__main__':
                 elif t == 'wms':
                     add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
                     #print url
+                elif t == 'geojson':
+                    add_service_geojson(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
                 else:
                     continue
 
