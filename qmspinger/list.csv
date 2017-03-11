@@ -1,0 +1,7 @@
+"id";"name";"status";"ok";"type";"url"
+"979";"2013 aerial imagery for San Juan County WA";"down";"BAD";"tms";"http://sjcgis.org/arcgis/rest/services/Basemaps/Aerials_2013_WM/MapServer/tile/{z}/{y}/{x}"
+"929";"20cm ortho - Coastline";"down";"BAD";"wms";"http://www.gisnet.lv/cgi-bin/osm_latvia"
+"576";"4UMaps";"down";"BAD";"tms";"http://tileserver.4umaps.eu/{z}/{x}/{y}.png"
+"930";"50cm ortho - Latvia";"down";"BAD";"wms";"http://www.gisnet.lv/cgi-bin/osm_latvia"
+"810";"7th Series (OS7)";"down";"BAD";"tms";"http://ooc.openstreetmap.org/os7/{z}/{x}/{y}.jpg"
+"649";"AGRI black-and-white 2.5m";"down";"BAD";"tms";"http://agri.openstreetmap.org/{z}/{x}/{y}.png"
