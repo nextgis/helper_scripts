@@ -82,26 +82,26 @@ def ping_GeoJSON(path):
     
     return r.status_code
 
-def ping_url(url):
-    domain = getdomain(url)
-
-    response = os.system("ping -c 1 " + domain)
-
-    if response == 0:
-        res = 'up'
-    else:
-        res = 'down'
-
+def ping_url(path):
+    domain = getdomain(path)
+    
+    try:
+        r = requests.head(domain)
+        res = r.status_code
+    except Exception as e:
+        res = e
+    
     return res
 
 def getdomain(path):
     parsed_uri = urlparse(path)
     domain = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
-
+    #domain = '{uri.netloc}/'.format(uri=parsed_uri)
+    
     return domain
 
 def get_ok(status):
-    if status == '200' or status == 'up':
+    if status == 200:
         ok = 'GOOD'
     else:
         ok = 'BAD'
