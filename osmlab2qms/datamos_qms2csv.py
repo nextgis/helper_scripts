@@ -47,6 +47,19 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-u','--update', action="store_true", help='Update data')
 args = parser.parse_args()
 
+def downloadDMS(filename):
+    #read file from gitlab
+    url='https://gitlab.com/nextgis/data.mos.ru/raw/master/datasets.json'
+
+    r = requests.get(url)
+    with open(filename, "wb") as data_file:
+        data_file.write(r.content)
+    print('Fresh dms_full.json dowloaded')
+    with open(filename) as data_file:    
+        data = json.load(data_file)
+
+    return data
+
 def downloadQMS(filename):
     #qmslist=import_qms()
     url='https://qms.nextgis.com/api/v1/geoservices/?format=json'
@@ -157,11 +170,10 @@ def find_changes(qmslayer,layer):
     
 if __name__ == '__main__':
 
-    if not os.path.exists('dms_full.json') or args.update: downloadDMS('dms.json')
+    if not os.path.exists('dms_full.json') or args.update: downloadDMS('dms_full.json')
     if not os.path.exists('qms_full.json') or args.update: downloadQMS('qms.json')
 
-    dmsfile=open('datasets.csv','rb')
-    dmslist = csv.DictReader(dmsfile)
+    dmslist=openjson('dms_full.json')
     qmslist=openjson('qms_full.json')
     
     fieldnames = ['id', 'name', 'type', 'exist_qms', 'changes_sync', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','terms_url','available_projections']
@@ -174,7 +186,7 @@ if __name__ == '__main__':
         listwriter.writerow(headers)
     
         for layer in dmslist:
-            if layer['ContainsGeodata'] == 'True':
+            if layer['ContainsGeodata'] == True:
                 row=dict()
                 row['type'] = 'geojson'
                 row['url'] = 'https://gitlab.com/nextgis/data.mos.ru/raw/master/data/%s/%s_f.geojson' % (layer['Id'],layer['Id'])
@@ -187,12 +199,13 @@ if __name__ == '__main__':
                 row['exist_qms'] = exist_qms
 
                 row['id'] = layer.get('Id')
-                row['name'] = layer.get('Caption')
+                row['name'] = layer.get('Caption').encode('utf-8')
                 
                 row['license_url'] = 'http://creativecommons.org/licenses/by/3.0/deed.ru'
                 row['attribution_text'] = 'Порталом открытых данных Правительства города Москвы'
                 row['attribution_url'] = 'https://data.mos.ru'
                 row['terms_url'] = 'https://data.mos.ru/about/terms'
+                row['available_projections'] = '[4326]'
 
                 if exist_qms:
                     changes_exist = find_changes(qmslayer,layer)

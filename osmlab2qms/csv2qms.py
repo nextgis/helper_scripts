@@ -153,6 +153,62 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
     #raw_input("Press Enter to continue...")
 
 def add_service_geojson():
+    #click new service
+    pyautogui.moveTo(1500, 150)
+    pyautogui.click()
+    time.sleep(sleep)
+
+    #select service
+    pyautogui.moveTo(500, 500)
+    pyautogui.click()
+    time.sleep(sleep)
+
+    #enter service name
+    pyautogui.press('tab')
+    pyautogui.typewrite(name, interval=interval)
+
+    #enter service url
+    pyautogui.press('tab')
+    pyautogui.typewrite(url, interval=interval)
+
+    #enter description
+    pyautogui.press('tab')
+    pyautogui.typewrite(description, interval=interval)    
+
+    #enter source
+    pyautogui.press('tab')
+    pyautogui.typewrite(source, interval=interval)
+    #pyautogui.scroll(-10)
+
+    #projection
+    pyautogui.press('tab')
+    pyautogui.typewrite(prj, interval=interval)
+
+    #license_url
+    pyautogui.press('tab')
+    pyautogui.press('tab')
+    pyautogui.press('enter')
+    pyautogui.press('tab')
+    pyautogui.press('tab')
+    pyautogui.typewrite(license_url, interval=interval)
+
+    #attribution_text
+    pyautogui.press('tab')
+    pyautogui.typewrite(attribution_text, interval=interval)
+
+    #attribution_url
+    pyautogui.press('tab')
+    pyautogui.typewrite(attribution_url, interval=interval)
+
+    #OK
+    pyautogui.press('tab')
+    pyautogui.press('tab')
+    pyautogui.press('enter')
+
+    #Save
+    pyautogui.press('tab')
+    pyautogui.press('enter')
+    #raw_input("Press Enter to continue...")
 
 
 if __name__ == '__main__':
@@ -178,6 +234,7 @@ if __name__ == '__main__':
                 url = row['url_qms']
                 layers = row['layers_qms']
                 
+                #OSMLab - move source, description, country - to csv generation script, only take values from the table here
                 cntry = [x for x in countryinfo.countries if x['code'] == row['country_code']]
                 if len(cntry) != 0:
                     description = 'This service is imported from OSMLab. OSMLab id: ' + row['id'] + '. Country: ' + cntry[0]['name']
@@ -185,6 +242,11 @@ if __name__ == '__main__':
                     description = 'This service is imported from OSMLab. OSMLab id: ' + row['id']
 
                 source = 'https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.geojson'
+                
+                #data.mos.ru
+                description = 'Данные с портала открытых данных г. Москвы. Идентификатор: ' + row[]
+                source = 'http://data.mos.ru'
+                
 
                 prjs = row['available_projections']
                 if prjs != '':
