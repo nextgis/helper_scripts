@@ -48,8 +48,8 @@ token = open('token').read().rstrip('\n')
 #################BOT TOKEN##################
 
 method = 'sendMessage'
-chat_id = -1001084564203
-test_chat_id = -1001104876475
+chat_id = -1001104876475 #@qmsupdates
+test_chat_id = -1001084564203 #@nextgis_chat
 if args.testmode: chat_id = test_chat_id
 
 def downloadqms():
@@ -87,7 +87,7 @@ def get_name(guid):
     return username
     
 def notify(type,link,name,url,submitter):
-    text = u'Новый %s сервис в QMS %s\nНазвание: %s\nДобавил: %s\nСервис: %s' % (type,link,name,submitter,url)
+    text = u'New %s QMS service %s\nName: %s\nSubmitter: %s\nUrl: %s' % (type,link,name,submitter,url)
 
     response = requests.post(
         url='https://api.telegram.org/bot{0}/{1}'.format(token, method),

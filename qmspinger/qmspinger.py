@@ -40,6 +40,8 @@ import json
 import os
 import re
 import csv
+import sys
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-u','--update', action="store_true", help='Update data')
@@ -78,27 +80,39 @@ def openjson(filename):
     return data
 
 def ping_GeoJSON(path):
-    r = requests.head(path)
+    start = time.time()
+    r = requests.get(path)
     ctype = get_contenttype(r)
+    end = time.time()
+    timing = end - start
 
-    return ctype,r.status_code
+    return ctype,r.status_code,timing
 
 def ping_WMS(path):
-    ctype = 'None'    
+    ctype = 'None'  
+    start = time.time()
     try:
-        r = requests.head(path)
+        r = requests.get(path)
         res = r.status_code
         ctype = get_contenttype(r)
+        timing = get_timing(path)
     except Exception as e:
         res = e
 
-    return ctype,res
+    end = time.time()
+    timing = end - start
+    return ctype,res,timing
+
+def get_timing(path):
+    #bad way
+    timing = requests.get(path).elapsed.total_seconds()
+    return timing
 
 def ping_url(path):
     domain = get_domain(path)
     
     try:
-        r = requests.head(domain)
+        r = requests.get(domain)
         res = r.status_code
     except Exception as e:
         res = e
@@ -131,7 +145,7 @@ if __name__ == '__main__':
     if not os.path.exists('qms_full.json') or args.update: downloadQMS('qms.json')
     qmslist=openjson('qms_full.json')
     
-    fieldnames = ['id', 'name', 'type', 'status', 'ok', 'ctype','url']
+    fieldnames = ['id', 'name', 'type', 'status', 'ok', 'ctype','time','url']
     
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
@@ -148,17 +162,27 @@ if __name__ == '__main__':
 
                 row['id'] = service.get('id')
                 row['name'] = service.get('name').encode('utf-8')
-                row['type'] = service.get('type')
-                row['url'] = service.get('url')
-                print row['name']
+                
+                sys.stdout.write(row['name'] + ": ")
+                sys.stdout.flush()
 
-                if row['type'] == 'geojson':
-                    ctype,status = ping_GeoJSON(row['url'])
-                elif row['type'] == 'wms':
-                    ctype,status = ping_WMS(row['url'])
+                service_type = service.get('type')
+                row['type'] = service_type
+                if service_type == 'wms':
+                    row['url'] = service.get('url') + '?request=GetCapabilities&service=WMS'
+                elif service_type == 'geojson':
+                    row['url'] = service.get('url')
+
+                if service_type == 'geojson':
+                    ctype,status,timing = ping_GeoJSON(row['url'])
+                elif service_type == 'wms':
+                    ctype,status,timing = ping_WMS(row['url'])
+                
+                sys.stdout.write(str(timing) + "\n")
 
                 row['status'] = status
                 row['ok'] = get_ok(status)
                 row['ctype'] = ctype
+                row['time'] = timing
 
                 listwriter.writerow(row)
