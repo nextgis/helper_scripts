@@ -176,7 +176,7 @@ if __name__ == '__main__':
     dmslist=openjson('dms_full.json')
     qmslist=openjson('qms_full.json')
     
-    fieldnames = ['id', 'name', 'type', 'exist_qms', 'changes_sync', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','terms_url','available_projections']
+    fieldnames = ['id', 'name', 'type', 'exist_qms', 'changes_sync', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','terms_url','available_projections', 'source', 'description']
     
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
@@ -192,6 +192,10 @@ if __name__ == '__main__':
                 row['url'] = 'https://gitlab.com/nextgis/data.mos.ru/raw/master/data/%s/%s_f.geojson' % (layer['Id'],layer['Id'])
                 print row['url']
                 row['url_qms'] = row['url']
+
+                #data.mos.ru
+                row['description'] = u'Данные с портала открытых данных г. Москвы. Идентификатор: ' + row['id']
+                row['source'] = 'http://data.mos.ru'
 
                 #Check if services already exists in QMS based on it's url
                 exist_qms = ''

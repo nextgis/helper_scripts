@@ -155,7 +155,7 @@ def find_changes(qmslayer,layer):
 
     if len(qmslayer['desc'].split(':')) > 1 and layer['id'] == qmslayer['desc'].split(':')[1].split('. ')[0].strip():
         #this service is synced with OSMLab
-        if 'license_url' in layer.keys() and layer['license_url'] != qmslayer['license_url']:
+        if 'license_url' in layer.keys() and layer['license_url'] != qmslayer['license_url'] and layer['license_url'] != 'Public Domain':
             find_changes = find_changes + ';' + 'license_url'
         if len(qmslayer['desc'].split(':')) >2:
             cntry = [x for x in countryinfo.countries if x['name'] == qmslayer['desc'].split(':')[2].strip()]
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     data = openjson('imagery.json')
     qmslist=openjson('qms_full.json')
     
-    fieldnames = ['id', 'name', 'type', 'exist_qms', 'changes_sync', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections']
+    fieldnames = ['id', 'name', 'type', 'exist_qms', 'changes_sync', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'source', 'description']
     
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
@@ -273,6 +273,16 @@ if __name__ == '__main__':
             row['overlay'] = layer.get('overlay')
             row['license_url'] = layer.get('license_url')
             row['available_projections'] = layer.get('available_projections')
+            row['source'] = 'https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.geojson'
+
+            cntry = [x for x in countryinfo.countries if x['code'] == row['country_code']]
+            if len(cntry) != 0:
+                description = 'This service is imported from OSMLab. OSMLab id: ' + row['id'] + '. Country: ' + cntry[0]['name']
+            else:
+                description = 'This service is imported from OSMLab. OSMLab id: ' + row['id']
+
+
+            row['description'] = description
 
             if 'attribution' in layer:
                 if 'text' in layer['attribution']:

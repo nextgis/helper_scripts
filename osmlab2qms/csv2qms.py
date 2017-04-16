@@ -7,16 +7,15 @@
 import time
 import pyautogui
 import csv
-import countryinfo
 
 def add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url):
     #click new service
-    pyautogui.moveTo(1500, 150)
+    pyautogui.moveTo(addservice_btn_x,addservice_btn_y)
     pyautogui.click()
     time.sleep(sleep)
 
     #select service
-    pyautogui.moveTo(700, 500)
+    pyautogui.moveTo(addtms_btn_x, addtms_btn_y)
     pyautogui.click()
     time.sleep(sleep)
 
@@ -73,16 +72,19 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attrib
     #Save
     pyautogui.press('tab')
     pyautogui.press('enter')
+
+    #addition enter in case licensing info was missing
+    pyautogui.press('enter')
     #raw_input("Press Enter to continue...")
 
 def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url):
     #click new service
-    pyautogui.moveTo(1500, 150)
+    pyautogui.moveTo(addservice_btn_x, addservice_btn_y)
     pyautogui.click()
     time.sleep(sleep)
 
     #select service
-    pyautogui.moveTo(900, 500)
+    pyautogui.moveTo(addwms_btn_x, addwms_btn_y)
     pyautogui.click()
     time.sleep(sleep)
 
@@ -150,16 +152,20 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
     #Save
     pyautogui.press('tab')
     pyautogui.press('enter')
+
+    #addition enter in case licensing info was missing
+    pyautogui.press('enter')
+
     #raw_input("Press Enter to continue...")
 
 def add_service_geojson():
     #click new service
-    pyautogui.moveTo(1500, 150)
+    pyautogui.moveTo(addservice_btn_x, addservice_btn_y)
     pyautogui.click()
     time.sleep(sleep)
 
     #select service
-    pyautogui.moveTo(500, 500)
+    pyautogui.moveTo(addgeojson_btn_x, addgeojson_btn_y)
     pyautogui.click()
     time.sleep(sleep)
 
@@ -208,10 +214,23 @@ def add_service_geojson():
     #Save
     pyautogui.press('tab')
     pyautogui.press('enter')
+
+    #addition enter in case licensing info was missing
+    pyautogui.press('enter')
     #raw_input("Press Enter to continue...")
 
 
 if __name__ == '__main__':
+    #buttons
+    addservice_btn_x = 1500
+    addservice_btn_y = 170
+    addwms_btn_x = 900
+    addwms_btn_y = 500
+    addtms_btn_x = 700
+    addtms_btn_y = 500
+    addgeojson_btn_x = 500
+    addgeojson_btn_y = 500
+
     sleep = 3 #seconds
     interval = 0.05
     imageformats = ['PNG','PNG8','PNG24','PNG32','GIF','BMP','JPEG','TIFF','TIFF8','GEOTIFF','GEOTIFF8','SVG']
@@ -233,20 +252,6 @@ if __name__ == '__main__':
                 print name
                 url = row['url_qms']
                 layers = row['layers_qms']
-                
-                #OSMLab - move source, description, country - to csv generation script, only take values from the table here
-                cntry = [x for x in countryinfo.countries if x['code'] == row['country_code']]
-                if len(cntry) != 0:
-                    description = 'This service is imported from OSMLab. OSMLab id: ' + row['id'] + '. Country: ' + cntry[0]['name']
-                else:
-                    description = 'This service is imported from OSMLab. OSMLab id: ' + row['id']
-
-                source = 'https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.geojson'
-                
-                #data.mos.ru
-                description = 'Данные с портала открытых данных г. Москвы. Идентификатор: ' + row[]
-                source = 'http://data.mos.ru'
-                
 
                 prjs = row['available_projections']
                 if prjs != '':
@@ -268,6 +273,9 @@ if __name__ == '__main__':
                 zmin = row['min_zoom']
                 zmax = row['max_zoom']
 
+                source = row['source']
+                description = row['description']
+
                 license_url = row['license_url']
                 attribution_text = row['attribution_text']
                 attribution_url = row['attribution_url']
@@ -279,7 +287,8 @@ if __name__ == '__main__':
                     add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
                     #print url
                 elif t == 'geojson':
-                    add_service_geojson(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
+                    #add_service_geojson(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
+                    continue
                 else:
                     continue
 
