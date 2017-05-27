@@ -271,7 +271,9 @@ if __name__ == '__main__':
             row['country_code'] = layer.get('country_code')
             row['best'] = layer.get('best')
             row['overlay'] = layer.get('overlay')
-            row['license_url'] = layer.get('license_url')
+
+            if layer.get('license_url') != None:
+                row['license_url'] = layer.get('license_url').encode('utf8')
             row['available_projections'] = layer.get('available_projections')
             row['source'] = 'https://github.com/osmlab/editor-layer-index/blob/gh-pages/imagery.geojson'
 
@@ -286,7 +288,7 @@ if __name__ == '__main__':
 
             if 'attribution' in layer:
                 if 'text' in layer['attribution']:
-                    row['attribution_text'] = layer['attribution']['text'].encode('utf8')            
+                    row['attribution_text'] = layer['attribution']['text'].encode('utf8')
             if 'attribution' in layer:
                 if 'url' in layer['attribution']:
                     row['attribution_url'] = layer['attribution']['url'].encode('utf8')
