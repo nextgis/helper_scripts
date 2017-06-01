@@ -111,6 +111,8 @@ def getLayerDomain(url):
 
 def prepare_url(url):
     url = url.replace('//a.','//')
+    if '-y' in url and row['origintop'] == True:
+        url = url.replace('{-y}','{y}')
     if url.find('http://') == 0: url = url.replace('http://','',1)
     if url.find('https://') == 0: url = url.replace('https://','',1)
     url = url.rstrip('?')
@@ -157,6 +159,8 @@ def find_changes(qmslayer,layer):
         #this service is synced with OSMLab
         if 'license_url' in layer.keys() and layer['license_url'] != qmslayer['license_url'] and layer['license_url'] != 'Public Domain':
             find_changes = find_changes + ';' + 'license_url'
+        if '{-y}' in layer['url'] and qmslayer['y_origin_top'] != False:
+            find_changes = find_changes + ';' + 'origintop'
         if len(qmslayer['desc'].split(':')) >2:
             cntry = [x for x in countryinfo.countries if x['name'] == qmslayer['desc'].split(':')[2].strip()]
             if layer['country_code'] != cntry[0]['code']:
@@ -178,7 +182,7 @@ def find_changes(qmslayer,layer):
             if 'min_zoom' in layer['extent'].keys() and layer['extent']['min_zoom'] != qmslayer['z_min']:
                 find_changes = find_changes + ';' + 'zmin'
             
-    return find_changes        
+    return find_changes
 def url_osmlabTMS2qms(url):
     if 'switch' in url:
         regex = r'\{switch:.*?\}'
@@ -189,7 +193,9 @@ def url_osmlabTMS2qms(url):
         url = re.sub(regex,new_val,url)
     url = url.replace('{zoom}','{z}')
     url = url.replace('{zoom-1}','{z-1}')
-    
+    if '-y' in url and row['origintop'] == True:
+        url = url.replace('{-y}','{y}')
+
     return url
 
 def url_osmlabWMS2qms(url):
@@ -210,7 +216,7 @@ def getFormatWMS(url):
     params = dict((k.upper(), v) for k,v in params.iteritems())
     format = ''
     if 'FORMAT' in params:
-        format = params['FORMAT']
+        format = params['FORMAT'].replace('%2F','/')
     
     return format
     
@@ -232,7 +238,7 @@ if __name__ == '__main__':
     data = openjson('imagery.json')
     qmslist=openjson('qms_full.json')
     
-    fieldnames = ['id', 'name', 'type', 'exist_qms', 'changes_sync', 'url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'source', 'description']
+    fieldnames = ['id', 'name', 'type', 'exist_qms','origintop','changes_sync','url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'source', 'description']
     
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
@@ -245,6 +251,11 @@ if __name__ == '__main__':
             row=dict()
             row['type'] = layer.get('type')
             row['url'] = layer.get('url')
+            if '-y' in row['url']:
+                row['origintop'] = True
+            else:
+                row['origintop'] = False
+
             print row['url']
             if row['type'] == 'tms':
                 row['url_qms'] = url_osmlabTMS2qms(row['url'])

@@ -1,3 +1,5 @@
 openpt_map
 stamen-terrain-background
 landsat
+SIGPAC-Spain
+CRAIG-Auvergne-2013

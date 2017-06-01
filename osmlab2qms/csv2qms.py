@@ -8,7 +8,7 @@ import time
 import pyautogui
 import csv
 
-def add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url):
+def add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_url,attribution_text,attribution_url):
     #click new service
     pyautogui.moveTo(addservice_btn_x,addservice_btn_y)
     pyautogui.click()
@@ -48,8 +48,14 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attrib
     pyautogui.press('tab')
     pyautogui.typewrite(zmax, interval=interval)
 
+    #origintop
+    if origintop == True:
+        pyautogui.press('tab')
+        #pyautogui.press('space')
+    else:
+        pyautogui.press('tab')
+
     #license_url
-    pyautogui.press('tab')
     pyautogui.press('tab')
     pyautogui.press('enter')
     pyautogui.press('tab')
@@ -272,6 +278,7 @@ if __name__ == '__main__':
                 getparams = row['getparams_qms']
                 zmin = row['min_zoom']
                 zmax = row['max_zoom']
+                origintop = row['origintop']
 
                 source = row['source']
                 description = row['description']
@@ -281,7 +288,7 @@ if __name__ == '__main__':
                 attribution_url = row['attribution_url']
 
                 if t == 'tms':
-                    add_service_tms(name,url,description,source,prj,zmin,zmax,license_url,attribution_text,attribution_url)
+                    add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_url,attribution_text,attribution_url)
                     #print url
                 elif t == 'wms':
                     add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
