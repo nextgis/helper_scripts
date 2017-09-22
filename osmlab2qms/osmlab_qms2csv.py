@@ -11,6 +11,7 @@
 #      usage: osmlab_qms2csv.py [-h] [-u]
 #      where:
 #           -h              show this help message and exit
+#           -u              force update (download) all
 # Example:
 #      python osmlab_qms2csv.py -u
 #
@@ -35,7 +36,8 @@
 
 import requests
 import argparse
-import json
+import json,geojson
+from shapely.geometry import shape
 from pprint import pprint
 import os
 import urlparse
@@ -238,7 +240,7 @@ if __name__ == '__main__':
     data = openjson('imagery.json')
     qmslist=openjson('qms_full.json')
     
-    fieldnames = ['id', 'name', 'type', 'exist_qms','origintop','changes_sync','url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'source', 'description']
+    fieldnames = ['id', 'name', 'type', 'exist_qms','origintop','poly','changes_sync','url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'source', 'description']
     
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
@@ -256,6 +258,7 @@ if __name__ == '__main__':
             else:
                 row['origintop'] = False
 
+
             print row['url']
             if row['type'] == 'tms':
                 row['url_qms'] = url_osmlabTMS2qms(row['url'])
@@ -265,7 +268,7 @@ if __name__ == '__main__':
                 row['getparams_qms'] = getParamsWMS(row['url']).lstrip('&')
                 row['url_qms'] = url_osmlabWMS2qms(row['url']) + '?'
 
-            #Check if services already exists in QMS based on it's url
+            #Check if service already exists in QMS based on it's url
             exist_qms = ''
             if row['type'] == 'tms':
                 qmslayer,exist_qms = find_qmsTMS(row['url_qms'])
@@ -273,9 +276,24 @@ if __name__ == '__main__':
                 qmslayer,exist_qms = find_qmsWMS(row['url_qms'],row['layers_qms'])
             row['exist_qms'] = exist_qms
 
+            row['poly'] = False
+            #If it does, save it's geometry with QMS id
+            if exist_qms == True and 'extent' in layer.keys():
+                if 'polygon' in layer['extent'].keys():
+                    row['poly'] = True
+                    o = {
+                        "coordinates": [layer['extent']['polygon']],
+                        "type": "MultiPolygon"
+                    }
+                    s = json.dumps(o)
+                    g1 = geojson.loads(s)
+                    g2 = shape(g1)
+                    f = open('geoms/' + str(qmslayer['id'])+'.wkt','wb')
+                    f.write(g2.wkt)
+                    f.close()
+
             row['id'] = layer.get('id')
             row['name'] = layer.get('name').encode('utf8')
-            
                 
             row['start_date'] = layer.get('start_date')
             row['end_date'] = layer.get('end_date')

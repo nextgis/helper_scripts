@@ -50,8 +50,8 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_
 
     #origintop
     if origintop == True:
-        pyautogui.press('tab')
-        #pyautogui.press('space')
+        #pyautogui.press('tab')
+        pyautogui.press('space')
     else:
         pyautogui.press('tab')
 
@@ -225,6 +225,9 @@ def add_service_geojson():
     pyautogui.press('enter')
     #raw_input("Press Enter to continue...")
 
+def add_geo():
+    #TODO: Add polygon
+    continue
 
 if __name__ == '__main__':
     #buttons
@@ -237,7 +240,7 @@ if __name__ == '__main__':
     addgeojson_btn_x = 500
     addgeojson_btn_y = 500
 
-    sleep = 3 #seconds
+    sleep = 5 #seconds
     interval = 0.05
     imageformats = ['PNG','PNG8','PNG24','PNG32','GIF','BMP','JPEG','TIFF','TIFF8','GEOTIFF','GEOTIFF8','SVG']
 
@@ -289,12 +292,15 @@ if __name__ == '__main__':
 
                 if t == 'tms':
                     add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_url,attribution_text,attribution_url)
+                    add_geo()
                     #print url
                 elif t == 'wms':
                     add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
+                    add_geo()
                     #print url
                 elif t == 'geojson':
                     #add_service_geojson(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
+                    add_geo()
                     continue
                 else:
                     continue
