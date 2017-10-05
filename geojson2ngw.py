@@ -16,8 +16,57 @@ from json import dumps
 from datetime import datetime
 
 
+import argparse
+def argparser_prepare():
+
+    class PrettyFormatter(argparse.ArgumentDefaultsHelpFormatter,
+        argparse.RawDescriptionHelpFormatter):
+
+        max_help_position = 35
+
+    parser = argparse.ArgumentParser(description='Upload all geojson from folder into NextGISWeb as new layers, and create of simple mapserver style.',
+            formatter_class=PrettyFormatter)
+    parser.add_argument('--url', type=str,required=True, 
+                           help='NGW instance url')
+    parser.add_argument('--login', default='administrator', required=False, help = 'ngw login')
+    parser.add_argument('--password', default='admin', required=False, help = 'ngw password')
+    parser.add_argument('--parent', type=int, help='id of group', default=0, required=False)
+    parser.add_argument('--groupname', type=str, help='name of new group', default='RESTUPL', required=False)
+    parser.add_argument('--folder', help = 'Take all geojsons from this folder')
+
+
+
+    parser.epilog = \
+        '''Samples: 
+
+#upload all geojsons from current folder
+time python %(prog)s --url http://trolleway.nextgis.com --parent 19 --login administrator --password admin 
+
+''' \
+        % {'prog': parser.prog}
+    return parser
+
+parser = argparser_prepare()
+args = parser.parse_args()
+
+URL = args.url
+AUTH = (args.login, args.password)
+GRPNAME = args.groupname
+
+if args.folder is None: 
+    destdir = os.curdir
+else:
+    destdir = args.folder
+PARENT=args.parent
+
+
+
+
+
+
+
 # Пока удаление ресурсов не работает, добавим дату и время к имени группы
-GRPNAME = datetime.now().isoformat() + " " + GRPNAME
+GRPNAME = GRPNAME + " " + datetime.now().isoformat()
 
 s = requests.Session()
 
@@ -69,7 +118,7 @@ courl = lambda: '%s/api/resource/' % URL
 grp = post(courl(), json=dict(
     resource=dict(
         cls='resource_group',   # Идентификатор типа ресурса
-        parent=dict(id=0),      # Создаем ресурс в основной группе ресурсов
+        parent=dict(id=PARENT),      # Создаем ресурс в основной группе ресурсов
         display_name=GRPNAME,   # Наименование (или имя) создаваемого ресурса
     )
 ))
@@ -87,37 +136,38 @@ get(iturl(grpid))
 
 # Проходим по файлам, ищем geojson
 
-destdir = os.curdir 
 files = filter(os.path.isfile, os.listdir( destdir ) )
-for filename in files:
-    if '.geojson'.lower() in filename.lower():    
-        print "uploading "+filename
-        
-        # Теперь создадим векторный слой из geojson-файла. Для начала нужно загрузить
-        # исходный ZIP-архив, поскольку передача файла внутри REST API - что-то
-        # странное. Для загрузки файлов предусмотрено отдельное API, которое понимает
-        # как обычную загрузку из HTML-формы, так загрузку методом PUT. Последнее
-        # несколько короче.
-        with open(filename, 'rb') as fd:
-            shpzip = put(URL + '/api/component/file_upload/upload', data=fd)
+for dirpath, dnames, fnames in os.walk(destdir):
+    for filename in fnames:
+        if '.geojson'.lower() in filename.lower():
+            filepath = (os.path.join(dirpath, filename))   
+            print "uploading "+filename
+            
+            # Теперь создадим векторный слой из geojson-файла. Для начала нужно загрузить
+            # исходный ZIP-архив, поскольку передача файла внутри REST API - что-то
+            # странное. Для загрузки файлов предусмотрено отдельное API, которое понимает
+            # как обычную загрузку из HTML-формы, так загрузку методом PUT. Последнее
+            # несколько короче.
+            with open(filepath, 'rb') as fd:
+                shpzip = put(URL + '/api/component/file_upload/upload', data=fd)
 
 
-        # Пока поддержка различных систем координат толком не реализована, но для
-        # создания слоя нужно указать хоть какую-то.
-        srs = dict(id=3857)
+            # Пока поддержка различных систем координат толком не реализована, но для
+            # создания слоя нужно указать хоть какую-то.
+            srs = dict(id=3857)
 
-        # Теперь непосредственно создание слоя, в целом оно точно так же как и создание
-        # группы работает, но указывается другой класс ресурса + данные этого класса -
-        # в нашем случае это система координат и исходный файл.
-        vectlyr = post(courl(), json=dict(
-            resource=dict(cls='vector_layer', parent=grpref, display_name=os.path.splitext(filename)[0]),
-            vector_layer=dict(srs=srs, source=shpzip)
-        ))
+            # Теперь непосредственно создание слоя, в целом оно точно так же как и создание
+            # группы работает, но указывается другой класс ресурса + данные этого класса -
+            # в нашем случае это система координат и исходный файл.
+            vectlyr = post(courl(), json=dict(
+                resource=dict(cls='vector_layer', parent=grpref, display_name=os.path.splitext(filename)[0]),
+                vector_layer=dict(srs=srs, source=shpzip)
+            ))
 
-        #Создание стиля
-        vectstyle = post(courl(), json=dict(
-            resource=dict(cls='mapserver_style', parent=vectlyr, display_name=os.path.splitext(filename)[0]),
-            mapserver_style=dict(xml="<map><layer><class><style><color red=\"255\" green=\"240\" blue=\"189\"/><outlinecolor red=\"255\" green=\"196\" blue=\"0\"/></style></class></layer></map>")
-        ))
+            #Создание стиля
+            vectstyle = post(courl(), json=dict(
+                resource=dict(cls='mapserver_style', parent=vectlyr, display_name=os.path.splitext(filename)[0]),
+                mapserver_style=dict(xml="<map><layer><class><style><color red=\"255\" green=\"240\" blue=\"189\"/><outlinecolor red=\"255\" green=\"196\" blue=\"0\"/></style></class></layer></map>")
+            ))
 
 #vectlyr['id']
