@@ -11,7 +11,7 @@ import sys
 def get_bboxes(guid):
     url = link2.replace('GUID',guid)
     bboxes = ''
-    json = requests.get(url).json()
+    json = requests.get(url, auth=('', password)).json()
     if json['data'] != None:
         bboxes = json['data']['ngwcluster']['bboxes']
     return bboxes
@@ -30,10 +30,11 @@ if __name__ == "__main__":
     #################SECRET LINKS##########################
     link1 = open('sensitive').read().rstrip('\n').split(',')[0]
     link2 = open('sensitive').read().rstrip('\n').split(',')[1]
+    password = open('sensitive').read().rstrip('\n').split(',')[2]
     #################SECRET LINKS##########################
     print 'url,wkt,url'
 
-    allinsts = requests.get(link1)
+    allinsts = requests.get(link1, auth=('', password))
     soup = BeautifulSoup(allinsts.content, 'html.parser')
     trs = soup.findAll('tr')
     for i in xrange(1,len(trs)):
