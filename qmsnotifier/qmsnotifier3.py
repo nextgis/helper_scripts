@@ -97,19 +97,24 @@ def notify(type,link,name,url,submitter):
     
 if __name__ == '__main__':
     os.remove("qms_old.json")
-    os.rename("qms.json","qms_old.json")
-    qmslist_new = downloadqms()
-    
-    with open("qms_old.json") as data_file:    
-        qmslist_old = json.load(data_file)
-    
-    for item in qmslist_new:
-        exist_qms = find_qms(item['id'])
-        if exist_qms == False:
-            #print('id' + str(item['id']))
-            type = item['type'].upper()
-            link = 'https://qms.nextgis.com/geoservices/' + str(item['id'])
-            name = item['name']
-            url = get_url(str(item['id']))
-            submitter = get_name(item['submitter'])
-            notify(type,link,name,url,submitter)
+
+    if os.path.exists("qms.json"):
+        os.rename("qms.json","qms_old.json")
+
+        qmslist_new = downloadqms()
+        
+        with open("qms_old.json") as data_file:    
+            qmslist_old = json.load(data_file)
+        
+        for item in qmslist_new:
+            exist_qms = find_qms(item['id'])
+            if exist_qms == False:
+                #print('id' + str(item['id']))
+                type = item['type'].upper()
+                link = 'https://qms.nextgis.com/geoservices/' + str(item['id'])
+                name = item['name']
+                url = get_url(str(item['id']))
+                submitter = get_name(item['submitter'])
+                notify(type,link,name,url,submitter)
+    else:
+        notify('type','link','name','Something went wrong, change the service','submitter')
