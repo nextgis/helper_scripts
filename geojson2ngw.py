@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Upload all geojson from folder into NextGISWeb as new layers, and create of simple mapserver style
+Upload all geojson from folder into NextGISWeb as new layers, and create simple mapserver styles
 
 Usage: geojson2ngw.py foldername
 '''
@@ -59,17 +59,10 @@ else:
     destdir = args.folder
 PARENT=args.parent
 
-
-
-
-
-
-
 # Пока удаление ресурсов не работает, добавим дату и время к имени группы
 GRPNAME = GRPNAME + " " + datetime.now().isoformat()
 
 s = requests.Session()
-
 
 def req(method, url, json=None, **kwargs):
     """ Простейшая обертка над библиотекой requests c выводом отправляемых
