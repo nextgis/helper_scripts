@@ -1,0 +1,13 @@
+
+CLIP (or select) SHP data by polygon using GRASS GIS
+
+The scrips are used for clip data in data.nextgis.com service:
+ * clip polygon|line shp files by provded polygon
+ * select point from shp files using the polygon
+ * 7zip the results.
+
+
+RUN:
+ 1. Run GRASS GIS in epsg 4326 LOCATION
+ 2. cd the_script_dir
+ 3. Run: make all
