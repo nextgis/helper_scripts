@@ -21,6 +21,7 @@ from json import dumps
 from datetime import datetime
 
 import sys  
+import os
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
@@ -35,8 +36,7 @@ def argparser_prepare():
 
     parser = argparse.ArgumentParser(description='Upload all geojson from folder into NextGISWeb as new layers, and create of simple mapserver style.',
             formatter_class=PrettyFormatter)
-    parser.add_argument('--url', type=str,required=True, 
-                           help='NGW instance url')
+    parser.add_argument('--url', type=str,required=False, help='NGW instance url')
     parser.add_argument('--login', default='administrator', required=False, help = 'ngw login')
     parser.add_argument('--password', default='admin', required=False, help = 'ngw password')
     parser.add_argument('--parent', type=int, help='id of group', default=0, required=False)
@@ -54,19 +54,65 @@ time python %(prog)s --url http://trolleway.nextgis.com --parent 19 --login admi
 ''' \
         % {'prog': parser.prog}
     return parser
-
+    
+def run_user_interface(parser=None):
+    #simple user interface
+    #get default values from parser object
+    print 'Upload all geojson from folder into NextGISWeb as new layers, and create of simple mapserver style.'
+    url = raw_input("Enter NGW instance url with protocol: ")
+    login = raw_input("Enter NGW instance login: ")
+    password = raw_input("Enter NGW instance password: ")
+    command = None
+    while command not in (0,1):
+        dir1 = os.path.dirname(os.path.realpath(__file__))
+        command = raw_input('From with folder? 0='+os.path.dirname(os.path.realpath(__file__))+', 1=manual input ')
+        try: 
+            command = int(command)
+        except ValueError:
+            command = None
+    if command == 0:
+        folder = os.path.dirname(os.path.realpath(__file__))
+    else:
+        folder = raw_input('Enter folder path: ')
+        
+    results = dict()
+    results['url'] = url
+    results['login'] = login
+    results['password'] = password
+    results['folder'] = folder
+    
+    return results  
+        
+    
 parser = argparser_prepare()
 args = parser.parse_args()
 
-URL = args.url
-AUTH = (args.login, args.password)
-GRPNAME = args.groupname
+#if none arguments, run user interface
+if args.url == None:
+    user_commands = run_user_interface(parser)
+    results=user_commands
+    
+    URL = results['url']
+    AUTH = (results['login'], results['password'])
+    GRPNAME = args.groupname
+    PARENT=args.parent
+    destdir = results['folder']
 
-if args.folder is None: 
-    destdir = os.curdir
+    #end of user interface
 else:
-    destdir = args.folder
-PARENT=args.parent
+    URL = args.url
+    AUTH = (args.login, args.password)
+    GRPNAME = args.groupname
+    PARENT=args.parent
+    if args.folder is None: 
+        destdir = os.curdir
+    else:
+        destdir = args.folder
+
+args = None #not to use beyond
+
+
+
 
 # Пока удаление ресурсов не работает, добавим дату и время к имени группы
 GRPNAME = GRPNAME + " " + datetime.now().isoformat()
@@ -94,7 +140,7 @@ def req(method, url, json=None, **kwargs):
 
     resp = s.send(preq)
 
-    assert resp.status_code / 100 == 2
+    assert resp.status_code / 100 == 2 , 'HTTP CODE ' + str(resp.status_code)
 
     jsonresp = resp.json()
 
@@ -141,7 +187,8 @@ get(iturl(grpid))
 files = filter(os.path.isfile, os.listdir( destdir ) )
 for dirpath, dnames, fnames in os.walk(destdir):
     for filename in fnames:
-        if '.geojson'.lower() in filename.lower():
+        print repr(filename)
+        if ('.geojson' in repr(filename)) or ('.GEOJSON' in repr(filename)): #use lower finction to filename casue fail at cyrilic filename
             filepath = (os.path.join(dirpath, filename))   
             print "uploading "+filename
             
