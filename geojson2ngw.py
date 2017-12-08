@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 '''
 Upload all geojson from folder into NextGISWeb as new layers, and create simple mapserver styles
 
@@ -6,6 +7,12 @@ Usage: geojson2ngw.py foldername
 
 Example: python geojson2ngw.py --login admin --password pass --groupname NEW --parent 499 --folder d:\Thematic\histgeo\ --url http://dev.nextgis.com/practice2
 '''
+import sys  
+
+reload(sys)  
+sys.setdefaultencoding('utf8')
+
+
 from __future__ import unicode_literals
 import os
 
