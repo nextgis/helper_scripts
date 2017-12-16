@@ -227,7 +227,7 @@ def add_service_geojson():
 
 def add_geo():
     #TODO: Add polygon
-    continue
+    pass
 
 if __name__ == '__main__':
     #buttons
@@ -240,7 +240,7 @@ if __name__ == '__main__':
     addgeojson_btn_x = 500
     addgeojson_btn_y = 500
 
-    sleep = 5 #seconds
+    sleep = 10 #seconds
     interval = 0.05
     imageformats = ['PNG','PNG8','PNG24','PNG32','GIF','BMP','JPEG','TIFF','TIFF8','GEOTIFF','GEOTIFF8','SVG']
 
