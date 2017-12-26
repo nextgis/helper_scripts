@@ -59,13 +59,15 @@ def run_user_interface(parser=None):
     #simple user interface
     #get default values from parser object
     print 'Upload all geojson from folder into NextGISWeb as new layers, and create of simple mapserver style.'
-    url = raw_input("Enter NGW instance url with protocol: ")
-    login = raw_input("Enter NGW instance login: ")
-    password = raw_input("Enter NGW instance password: ")
+    url = raw_input("NGW instance url with protocol: ")
+    login = raw_input("NGW instance login: ")
+    password = raw_input("NGW instance password: ")
+    group_id = raw_input("NGW target group id: ")
+    group_name = raw_input("NGW tager group name (0=don't create group: ")
     command = None
     while command not in (0,1):
         dir1 = os.path.dirname(os.path.realpath(__file__))
-        command = raw_input('From with folder? 0='+os.path.dirname(os.path.realpath(__file__))+', 1=manual input ')
+        command = raw_input('Source folder? 0='+os.path.dirname(os.path.realpath(__file__))+', 1=manual input ')
         try: 
             command = int(command)
         except ValueError:
@@ -80,9 +82,10 @@ def run_user_interface(parser=None):
     results['login'] = login
     results['password'] = password
     results['folder'] = folder
+    results['group_id'] = group_id
+    results['group_name'] = group_name
     
-    return results  
-        
+    return results
     
 parser = argparser_prepare()
 args = parser.parse_args()
@@ -97,7 +100,6 @@ if args.url == None:
     GRPNAME = args.groupname
     PARENT=args.parent
     destdir = results['folder']
-
     #end of user interface
 else:
     URL = args.url
@@ -109,13 +111,13 @@ else:
     else:
         destdir = args.folder
 
-args = None #not to use beyond
-
-
-
+args = None #don't use afterwards
 
 # Пока удаление ресурсов не работает, добавим дату и время к имени группы
-GRPNAME = GRPNAME + " " + datetime.now().isoformat()
+if group_name = None:
+    GRPNAME = GRPNAME + " " + datetime.now().isoformat()
+else:
+    GRPNAME = group_name
 
 s = requests.Session()
 
