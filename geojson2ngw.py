@@ -14,7 +14,7 @@ import os
 
 URL = 'http://example.com/ngw'
 AUTH = ('administrator', 'admin')
-GRPNAME = "Загрузка из python"
+DEFAULT_GRPNAME = "Загрузка из python"
 
 import requests
 from json import dumps
@@ -40,7 +40,7 @@ def argparser_prepare():
     parser.add_argument('--login', default='administrator', required=False, help = 'ngw login')
     parser.add_argument('--password', default='admin', required=False, help = 'ngw password')
     parser.add_argument('--parent', type=int, help='id of group', default=0, required=False)
-    parser.add_argument('--groupname', type=str, help='name of new group', default='RESTUPL', required=False)
+    parser.add_argument('--groupname', type=str, help='name of new group', default=DEFAULT_GRPNAME, required=False)
     parser.add_argument('--folder', help = 'Take all geojsons from this folder')
 
 
@@ -97,14 +97,16 @@ if args.url == None:
     
     URL = results['url']
     AUTH = (results['login'], results['password'])
-    GRPNAME = args.groupname
+    groupname = args.groupname
     PARENT=args.parent
     destdir = results['folder']
     #end of user interface
 else:
+    print args
+
     URL = args.url
     AUTH = (args.login, args.password)
-    GRPNAME = args.groupname
+    groupname = args.groupname #тут передаётся в переменную groupname, а потом 
     PARENT=args.parent
     if args.folder is None: 
         destdir = os.curdir
@@ -113,11 +115,11 @@ else:
 
 args = None #don't use afterwards
 
-# Пока удаление ресурсов не работает, добавим дату и время к имени группы
-if group_name = None:
-    GRPNAME = GRPNAME + " " + datetime.now().isoformat()
+# Что бы не было попыток создать несколько групп с одинаковым именем, добавим дату и время к имени группы
+if groupname == DEFAULT_GRPNAME:
+    GRPNAME = DEFAULT_GRPNAME + " " + datetime.now().isoformat()
 else:
-    GRPNAME = group_name
+    GRPNAME = groupname
 
 s = requests.Session()
 
