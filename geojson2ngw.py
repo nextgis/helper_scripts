@@ -152,7 +152,7 @@ def req(method, url, json=None, **kwargs):
 
     resp = s.send(preq)
 
-    assert resp.status_code / 100 == 2 , 'HTTP CODE ' + str(resp.status_code)
+    #assert resp.status_code / 100 == 2 , 'HTTP CODE ' + str(resp.status_code)
 
     jsonresp = resp.json()
 
