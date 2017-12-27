@@ -23,7 +23,7 @@ class programModel(object):
         
         arguments = ''
 
-        print payload
+
 
 
         if payload['url'] != '':
@@ -38,11 +38,18 @@ class programModel(object):
             arguments += ' --parent ' + payload['parent']
         if payload['groupname'] != '':
             arguments += ' --groupname ' + payload['groupname']
+        if payload['no-create'] == True:
+            arguments += ' --no-create '
 
+        #print payload
         cmd = 'python geojson2ngw.py ' + arguments
+        #print
+        #print
+        #print cmd
+        #quit()
         os.system(cmd)
 
-        print
+        print #это нужно для эстетики
         raw_input('[Enter] - Return to dialog   [Ctrl+C] - Quit')
 
 
@@ -52,7 +59,7 @@ class programModel(object):
     def get_all(self):
         #Get saved form values of default values
         if self.fieldValues is None:
-            return {"url": "http://.nextgis.com", "login": "administrator", "password": "", "groupname": "", "folder": "", "parent": ""}
+            return {"url": "http://.nextgis.com", "login": "administrator", "password": "", "groupname": "", "folder": "", "parent": "", "no-create": False}
         else:
             return self.fieldValues
 
@@ -88,10 +95,11 @@ class NGWUploaderView(Frame):
         layout.add_widget(Text("NGW URL or nextgis.com account:", "url",validator = regexpIsURL))
         layout.add_widget(Text("Login:", "login"))
         layout.add_widget(Text("Password:", "password",hide_char="*"))
-        layout.add_widget(Text("New resourse group name (optional):", "groupname"))
+        layout.add_widget(Divider())
         layout.add_widget(Text("Path to folder with geojson (optional):", "folder"))
-        layout.add_widget(Text("parent folder id (optional):", "parent",validator = regexpIsDight))
-        #layout.add_widget(CheckBox("", label="Create webmap:", name="create_webmap"))
+        layout.add_widget(Text("New resourse group name (optional):", "groupname"))
+        layout.add_widget(Text("Parent folder id (optional):", "parent",validator = regexpIsDight))
+        layout.add_widget(CheckBox("", label="Skip create resourse group:", name="no-create"))
         #layout.add_widget(TextBox(
         #    Widget.FILL_FRAME, "Notes:", "notes", as_string=True))
         layout2 = Layout([1, 1, 1, 1])

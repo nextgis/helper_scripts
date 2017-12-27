@@ -14,7 +14,7 @@ import os
 
 URL = 'http://example.com/ngw'
 AUTH = ('administrator', 'admin')
-DEFAULT_GRPNAME = "Загрузка из python"
+DEFAULT_GRPNAME = "Загрузка из Python"
 
 import requests
 from json import dumps
@@ -32,16 +32,21 @@ def argparser_prepare():
     class PrettyFormatter(argparse.ArgumentDefaultsHelpFormatter,
         argparse.RawDescriptionHelpFormatter):
 
-        max_help_position = 35
+        max_help_position = 45
 
     parser = argparse.ArgumentParser(description='Upload all geojson from folder into NextGISWeb as new layers, and create of simple mapserver style.',
             formatter_class=PrettyFormatter)
     parser.add_argument('--url', type=str,required=False, help='NGW instance url')
     parser.add_argument('--login', default='administrator', required=False, help = 'ngw login')
     parser.add_argument('--password', default='admin', required=False, help = 'ngw password')
-    parser.add_argument('--parent', type=int, help='id of group', default=0, required=False)
-    parser.add_argument('--groupname', type=str, help='name of new group', default=DEFAULT_GRPNAME, required=False)
+    parser.add_argument('--parent', type=int, help='id of parent group', default=0, required=False)
+    parser.add_argument('--groupname', type=str, help='name of new group. Create only if parent=0', default=DEFAULT_GRPNAME, required=False)
     parser.add_argument('--folder', help = 'Take all geojsons from this folder')
+    creating_group_parser = parser.add_mutually_exclusive_group(required=False)
+    creating_group_parser.add_argument('--create', dest='create', help = 'Create new resourse group', action='store_true',default=True)
+    creating_group_parser.add_argument('--no-create', dest='create', help = 'Upload layers into existing resourse group', action='store_false',default=False)
+
+
 
 
 
@@ -90,6 +95,8 @@ def run_user_interface(parser=None):
 parser = argparser_prepare()
 args = parser.parse_args()
 
+
+
 #if none arguments, run user interface
 if args.url == None:
     user_commands = run_user_interface(parser)
@@ -101,9 +108,8 @@ if args.url == None:
     PARENT=args.parent
     destdir = results['folder']
     #end of user interface
+    create = True
 else:
-    print args
-
     URL = args.url
     AUTH = (args.login, args.password)
     groupname = args.groupname #тут передаётся в переменную groupname, а потом 
@@ -112,6 +118,8 @@ else:
         destdir = os.curdir
     else:
         destdir = args.folder
+
+    create = args.create
 
 args = None #don't use afterwards
 
@@ -165,21 +173,25 @@ def delete(url, **kwargs): return req('DELETE', url, **kwargs)      # NOQA
 iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
 courl = lambda: '%s/api/resource/' % URL
 
-# Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
-# производится все дальнешние манипуляции.
-grp = post(courl(), json=dict(
-    resource=dict(
-        cls='resource_group',   # Идентификатор типа ресурса
-        parent=dict(id=PARENT),      # Создаем ресурс в основной группе ресурсов
-        display_name=GRPNAME,   # Наименование (или имя) создаваемого ресурса
-    )
-))
+if create:
+    # Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
+    # производится все дальнешние манипуляции.
+    grp = post(courl(), json=dict(
+        resource=dict(
+            cls='resource_group',   # Идентификатор типа ресурса
+            parent=dict(id=PARENT),      # Создаем ресурс в основной группе ресурсов
+            display_name=GRPNAME,   # Наименование (или имя) создаваемого ресурса
+        )
+    ))
 
-# Поскольку все дальнейшие манипуляции будут внутри созданной группы,
-# поместим ее ID в отдельную переменную.
-grpid = grp['id']
-grpref = dict(id=grpid)
-
+    # Поскольку все дальнейшие манипуляции будут внутри созданной группы,
+    # поместим ее ID в отдельную переменную.
+    grpid = grp['id']
+    grpref = dict(id=grpid)
+else:
+    #не создаём группу, а грузим файлы в существующую
+    grpid = PARENT
+    grpref = dict(id=grpid)    
 
 # Метод POST возвращает только ID созданного ресурса, посмотрим все данные
 # только что созданной подгруппы.
