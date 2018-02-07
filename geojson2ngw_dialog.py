@@ -40,12 +40,13 @@ class programModel(object):
             arguments += ' --groupname ' + payload['groupname']
         if payload['no-create'] == True:
             arguments += ' --no-create '
+        
 
         #print payload
-        cmd = 'python geojson2ngw.py ' + arguments
+        cmd = 'python '+os.path.join(os.path.realpath(__file__),'geojson2ngw.py ') + arguments
         #print
         #print
-        #print cmd
+        print cmd
         #quit()
         os.system(cmd)
 
