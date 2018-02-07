@@ -141,7 +141,7 @@ def req(method, url, json=None, **kwargs):
         kwargs['data'] = dumps(json)
         jsonuc = dumps(json, ensure_ascii=False)
 
-    req = requests.request(method, url, auth=AUTH, timeout=None, **kwargs)
+    req = requests.Request(method, url, auth=AUTH, **kwargs)
     preq = req.prepare()
 
     print ""
@@ -150,7 +150,7 @@ def req(method, url, json=None, **kwargs):
     if jsonuc:
         print ">>> %s" % jsonuc
 
-    resp = s.send(preq)
+    resp = s.send(preq, timeout=None)
 
     #assert resp.status_code / 100 == 2 , 'HTTP CODE ' + str(resp.status_code)
 
