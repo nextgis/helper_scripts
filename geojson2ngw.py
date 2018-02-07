@@ -141,7 +141,7 @@ def req(method, url, json=None, **kwargs):
         kwargs['data'] = dumps(json)
         jsonuc = dumps(json, ensure_ascii=False)
 
-    req = requests.Request(method, url, auth=AUTH,timeout=None, **kwargs)
+    req = requests.Request(method, url, auth=AUTH, timeout=None, **kwargs)
     preq = req.prepare()
 
     print ""
