@@ -158,7 +158,7 @@ def req(method, url, json=None, **kwargs):
         jsonresp = resp.json()
     except:
         print 'bad response'
-        print jsonresp
+        print resp
         raise
     for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
         print "<<< %s" % line
