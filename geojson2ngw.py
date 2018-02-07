@@ -234,5 +234,35 @@ for dirpath, dnames, fnames in os.walk(destdir):
                 resource=dict(cls='mapserver_style', parent=vectlyr, display_name=os.path.splitext(filename)[0]),
                 mapserver_style=dict(xml="<map><layer><class><style><color red=\"255\" green=\"240\" blue=\"189\"/><outlinecolor red=\"255\" green=\"196\" blue=\"0\"/></style></class></layer></map>")
             ))
+            
+# iterate through files, search for tiff 
 
+files = filter(os.path.isfile, os.listdir( destdir ) )
+for dirpath, dnames, fnames in os.walk(destdir):
+    for filename in fnames:
+        print repr(filename)
+        if ('.tif' in repr(filename)) or ('.TIF' in repr(filename)): #use lower finction to filename casue fail at cyrilic filename
+            filepath = (os.path.join(dirpath, filename))   
+            print "uploading "+filename
+            
+            # Upload raster file
+            with open(filepath, 'rb') as fd:
+                tif = put(URL + '/api/component/file_upload/upload', data=fd)
+
+
+            # ???
+            srs = dict(id=3857)
+
+            # Query for create layer
+            rastlyr = post(courl(), json=dict(
+                resource=dict(cls='raster_layer', parent=grpref, display_name=os.path.splitext(filename)[0]),
+                raster_layer=dict(srs=srs, source=tif)
+            ))
+
+            #Query for create style
+            rasterstyle = post(courl(), json=dict(
+                resource=dict(cls='raster_style', parent=rastlyr, display_name=os.path.splitext(filename)[0]),
+                
+            ))
+            
 #vectlyr['id']
