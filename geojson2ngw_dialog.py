@@ -43,7 +43,7 @@ class programModel(object):
         
 
         #print payload
-        cmd = 'python '+os.path.join(os.path.realpath(__file__),'geojson2ngw.py ') + arguments
+        cmd = 'python '+os.path.join(os.path.dirname(os.path.realpath(__file__)),'geojson2ngw.py ') + arguments
         #print
         #print
         print cmd
