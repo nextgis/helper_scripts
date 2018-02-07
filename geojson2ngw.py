@@ -197,6 +197,7 @@ else:
 # только что созданной подгруппы.
 get(iturl(grpid))
 
+upload_styles_responses = list()
 
 # Проходим по файлам, ищем geojson
 
@@ -234,6 +235,7 @@ for dirpath, dnames, fnames in os.walk(destdir):
                 resource=dict(cls='mapserver_style', parent=vectlyr, display_name=os.path.splitext(filename)[0]),
                 mapserver_style=dict(xml="<map><layer><class><style><color red=\"255\" green=\"240\" blue=\"189\"/><outlinecolor red=\"255\" green=\"196\" blue=\"0\"/></style></class></layer></map>")
             ))
+            upload_styles_responses.append(vectstyle)
             
 # iterate through files, search for tiff 
 
@@ -264,5 +266,9 @@ for dirpath, dnames, fnames in os.walk(destdir):
                 resource=dict(cls='raster_style', parent=rastlyr, display_name=os.path.splitext(filename)[0]),
                 
             ))
+            upload_styles_responses.append(vectstyle)
             
+for style in upload_styles_responses:
+    print style['resource']['id']
+    
 #vectlyr['id']
