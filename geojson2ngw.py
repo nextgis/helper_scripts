@@ -154,8 +154,12 @@ def req(method, url, json=None, **kwargs):
 
     #assert resp.status_code / 100 == 2 , 'HTTP CODE ' + str(resp.status_code)
 
-    jsonresp = resp.json()
-
+    try:
+        jsonresp = resp.json()
+    except:
+        print 'bad response'
+        print jsonresp
+        raise
     for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
         print "<<< %s" % line
 
