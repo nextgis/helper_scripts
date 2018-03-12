@@ -38,6 +38,7 @@ import requests
 import argparse
 import json,geojson
 from shapely.geometry import shape
+from shapely.wkt import dumps,loads
 from pprint import pprint
 import os
 import urlparse
@@ -70,21 +71,21 @@ def downloadQMS(filename):
     with open(filename, "wb") as data_file:
         data_file.write(r.content)
 
-    with open(filename) as data_file:    
-        qmslist = json.load(data_file)
+    with open(filename) as data_file:
+        qmslayers = json.load(data_file)
 
     newlist=[]
     os.unlink('qms.json')
-    for layer in qmslist:
+    for qmslayer in qmslayers:
 
-        url='https://qms.nextgis.com/api/v1/geoservices/'+str(layer['id'])+'/?format=json'
+        url='https://qms.nextgis.com/api/v1/geoservices/'+str(qmslayer['id'])+'/?format=json'
         print url
         r = requests.get(url)
         data = json.loads(r.content)
-        layer.update(data)
+        qmslayer.update(data)
 
-        #print layer
-        newlist.append(layer)
+        #print qmslayer
+        newlist.append(qmslayer)
         with open('qms_full.json', 'wb') as outfile:
             json.dump(newlist, outfile)
 
@@ -132,10 +133,10 @@ def find_noimport(service_id):
     return result
 
 def find_qmsTMS(url):
-    #   Search in qms for layer
+    #Search in qms for a layer
     exist_qms = False
     layer = None
-    for qmslayer in qmslist:
+    for qmslayer in qmslayers:
         if prepare_url(url) in qmslayer['url'].upper():
                 exist_qms = True
                 layer = qmslayer
@@ -143,10 +144,10 @@ def find_qmsTMS(url):
     return layer, exist_qms
 
 def find_qmsWMS(url,layers):
-    #   Search in qms for layer
+    #Search in qms for a layer
     exist_qms = False
     layer = None
-    for qmslayer in qmslist:
+    for qmslayer in qmslayers:
         if prepare_url(url) in qmslayer['url'].upper() and qmslayer['type'] == 'wms':
             if qmslayer['layers'].upper() == layers.upper():
                 exist_qms = True
@@ -154,37 +155,47 @@ def find_qmsWMS(url,layers):
 
     return layer, exist_qms
 
-def find_changes(qmslayer,layer):
+def find_changes(qmslayer,osmlablayer):
+    #TODO: Compare extent polygons
     find_changes = ''
 
-    if len(qmslayer['desc'].split(':')) > 1 and layer['id'] == qmslayer['desc'].split(':')[1].split('. ')[0].strip():
+    if len(qmslayer['desc'].split(':')) > 1 and osmlablayer['id'] == qmslayer['desc'].split(':')[1].split('. ')[0].strip():
         #this service is synced with OSMLab
-        if 'license_url' in layer.keys() and layer['license_url'] != qmslayer['license_url'] and layer['license_url'] != 'Public Domain':
+        if 'license_url' in osmlablayer.keys() and osmlablayer['license_url'] != qmslayer['license_url'] and osmlablayer['license_url'] != 'Public Domain':
             find_changes = find_changes + ';' + 'license_url'
-        if '{-y}' in layer['url'] and qmslayer['y_origin_top'] != False:
+        if '{-y}' in osmlablayer['url'] and qmslayer['y_origin_top'] != False:
             find_changes = find_changes + ';' + 'origintop'
         if len(qmslayer['desc'].split(':')) >2:
             cntry = [x for x in countryinfo.countries if x['name'] == qmslayer['desc'].split(':')[2].strip()]
-            if layer['country_code'] != cntry[0]['code']:
+            if osmlablayer['country_code'] != cntry[0]['code']:
                 find_changes = find_changes + ';' + 'country'
-        if layer['type'] != qmslayer['type']:
+        if osmlablayer['type'] != qmslayer['type']:
             find_changes = find_changes + ';' + 'type'    
-        if 'attribution' in layer.keys():
-            if 'text' in layer['attribution'].keys() and layer['attribution']['text'].strip() != qmslayer['copyright_text']:
+        if 'attribution' in osmlablayer.keys():
+            if 'text' in osmlablayer['attribution'].keys() and osmlablayer['attribution']['text'].strip() != qmslayer['copyright_text']:
                 find_changes = find_changes + ';' + 'copyright_text'
-            if 'url' in layer['attribution'].keys() and layer['attribution']['url'] != qmslayer['copyright_url']:
+            if 'url' in osmlablayer['attribution'].keys() and osmlablayer['attribution']['url'] != qmslayer['copyright_url']:
                 find_changes = find_changes + ';' + 'copyright_url'
-        if layer['name'] != qmslayer['name'] and layer['name'] + ' WMS' != qmslayer['name'] and layer['name'] + ' TMS' != qmslayer['name']:
+        if osmlablayer['name'] != qmslayer['name'] and osmlablayer['name'] + ' WMS' != qmslayer['name'] and osmlablayer['name'] + ' TMS' != qmslayer['name']:
             find_changes = find_changes + ';' + 'name'
-        if 'extent' in layer.keys():
+        if 'extent' in osmlablayer.keys():
             if 'z_max' not in qmslayer.keys(): qmslayer['z_max'] = ''
             if 'z_min' not in qmslayer.keys(): qmslayer['z_min'] = ''
-            if 'max_zoom' in layer['extent'].keys() and layer['extent']['max_zoom'] != qmslayer['z_max']:
+            if 'max_zoom' in osmlablayer['extent'].keys() and osmlablayer['extent']['max_zoom'] != qmslayer['z_max']:
                 find_changes = find_changes + ';' + 'zmax'
-            if 'min_zoom' in layer['extent'].keys() and layer['extent']['min_zoom'] != qmslayer['z_min']:
+            if 'min_zoom' in osmlablayer['extent'].keys() and osmlablayer['extent']['min_zoom'] != qmslayer['z_min']:
                 find_changes = find_changes + ';' + 'zmin'
-            
-    return find_changes
+        if 'extent' in osmlablayer.keys():
+            if 'polygon' in osmlablayer['extent'].keys():
+                osmlab_wkt = coords2geom(layer['extent']['polygon'])
+                qms_wkt = ''
+                if qmslayer['boundary'] != None: 
+                    qms_wkt = wkt2geom(qmslayer['boundary'].replace('SRID=4326;',''))
+                
+                if osmlab_wkt != qms_wkt:
+                    find_changes = find_changes + ';' + 'geom'
+    return find_changes.strip(';')
+    
 def url_osmlabTMS2qms(url):
     if 'switch' in url:
         regex = r'\{switch:.*?\}'
@@ -232,15 +243,34 @@ def getParamsWMS(url):
             getparams = getparams + '&' + param + '=' + params[param]
     return getparams
     
+def wkt2geom(wkt):
+    g1 = loads(wkt)
+    g2 = shape(g1)
+    res = dumps(g2, rounding_precision=6)
+    
+    return res
+    
+def coords2geom(coords):
+    o = {
+        "coordinates": [coords],
+        "type": "MultiPolygon"
+    }
+    s = json.dumps(o)
+    g1 = geojson.loads(s)
+    g2 = shape(g1)
+    res = dumps(g2, rounding_precision=6)
+    
+    return res
+    
 if __name__ == '__main__':
 
     if not os.path.exists('qms_full.json') or args.update: downloadQMS('qms.json')
     if not os.path.exists('imagery.json') or args.update: downloadOSMLab('imagery.json')
 
     data = openjson('imagery.json')
-    qmslist=openjson('qms_full.json')
+    qmslayers=openjson('qms_full.json')
     
-    fieldnames = ['id', 'name', 'type', 'exist_qms','origintop','poly','changes_sync','url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'source', 'description']
+    fieldnames = ['osmlab_id','qms_id','name', 'type', 'exist_qms','origintop','poly','changes_sync','url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'source', 'description','osmlab_wkt','qms_wkt']
     
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
@@ -258,7 +288,6 @@ if __name__ == '__main__':
             else:
                 row['origintop'] = False
 
-
             print row['url']
             if row['type'] == 'tms':
                 row['url_qms'] = url_osmlabTMS2qms(row['url'])
@@ -275,24 +304,17 @@ if __name__ == '__main__':
             elif row['type'] == 'wms':
                 qmslayer,exist_qms = find_qmsWMS(row['url_qms'],row['layers_qms'])
             row['exist_qms'] = exist_qms
-
+            
+            if qmslayer != None and qmslayer['boundary'] != None: 
+                row['qms_wkt'] = wkt2geom(qmslayer['boundary'].replace('SRID=4326;',''))
             row['poly'] = False
-            #If it does, save it's geometry with QMS id
-            if exist_qms == True and 'extent' in layer.keys():
+            #If it exists in QMS, save it's geometry with QMS id for further upload to QMS - no, save anyway, but in the table
+            if 'extent' in layer.keys():
                 if 'polygon' in layer['extent'].keys():
                     row['poly'] = True
-                    o = {
-                        "coordinates": [layer['extent']['polygon']],
-                        "type": "MultiPolygon"
-                    }
-                    s = json.dumps(o)
-                    g1 = geojson.loads(s)
-                    g2 = shape(g1)
-                    f = open('geoms/' + str(qmslayer['id'])+'.wkt','wb')
-                    f.write(g2.wkt)
-                    f.close()
+                    row['osmlab_wkt'] = coords2geom(layer['extent']['polygon'])
 
-            row['id'] = layer.get('id')
+            row['osmlab_id'] = layer.get('id')
             row['name'] = layer.get('name').encode('utf8')
                 
             row['start_date'] = layer.get('start_date')
@@ -308,10 +330,9 @@ if __name__ == '__main__':
 
             cntry = [x for x in countryinfo.countries if x['code'] == row['country_code']]
             if len(cntry) != 0:
-                description = 'This service is imported from OSMLab. OSMLab id: ' + row['id'] + '. Country: ' + cntry[0]['name']
+                description = 'This service is imported from OSMLab. OSMLab id: ' + row['osmlab_id'] + '. Country: ' + cntry[0]['name']
             else:
-                description = 'This service is imported from OSMLab. OSMLab id: ' + row['id']
-
+                description = 'This service is imported from OSMLab. OSMLab id: ' + row['osmlab_id']
 
             row['description'] = description
 
@@ -328,9 +349,10 @@ if __name__ == '__main__':
                     row['min_zoom'] = layer['extent']['min_zoom']
 
             if exist_qms:
+                row['qms_id'] = qmslayer['id']
                 changes_exist = find_changes(qmslayer,layer)
                 row['changes_sync'] = changes_exist
             else:
-                if find_noimport(row['id']): row['exist_qms'] = 'Skip'
+                if find_noimport(row['osmlab_id']): row['exist_qms'] = 'Skip'
 
             listwriter.writerow(row)
