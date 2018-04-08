@@ -284,9 +284,9 @@ if __name__ == '__main__':
             row['type'] = layer.get('type')
             row['url'] = layer.get('url')
             if '-y' in row['url']:
-                row['origintop'] = True
-            else:
                 row['origintop'] = False
+            else:
+                row['origintop'] = True
 
             print row['url']
             if row['type'] == 'tms':

@@ -3,10 +3,13 @@
 # Project: Upload service definitions from CSV (pregenerated from OSMLAB, data.mos.ru etc.) to QMS
 # Author: Maxim Dubinin <maxim.dubinin@nextgis.com>
 # Copyright: 2016-present, NextGIS <info@nextgis.com>
+# Run:
+#       python csv2qms.py
 
 import time
 import pyautogui
 import csv
+import pyperclip
 
 def add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_url,attribution_text,attribution_url):
     #click new service
@@ -164,7 +167,7 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
 
     #raw_input("Press Enter to continue...")
 
-def add_service_geojson():
+def add_service_geojson(name,url,description,source,prj,license_name,license_url,attribution_text,attribution_url,terms_url):
     #click new service
     pyautogui.moveTo(addservice_btn_x, addservice_btn_y)
     pyautogui.click()
@@ -177,7 +180,8 @@ def add_service_geojson():
 
     #enter service name
     pyautogui.press('tab')
-    pyautogui.typewrite(name, interval=interval)
+    pyperclip.copy(name.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
 
     #enter service url
     pyautogui.press('tab')
@@ -185,35 +189,48 @@ def add_service_geojson():
 
     #enter description
     pyautogui.press('tab')
-    pyautogui.typewrite(description, interval=interval)    
-
+    #pyautogui.typewrite(description, interval=interval)    
+    pyperclip.copy(description.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
+    
     #enter source
     pyautogui.press('tab')
-    pyautogui.typewrite(source, interval=interval)
-    #pyautogui.scroll(-10)
+    #pyautogui.typewrite(source, interval=interval)
+    pyperclip.copy(source.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
 
     #projection
     pyautogui.press('tab')
     pyautogui.typewrite(prj, interval=interval)
-
-    #license_url
-    pyautogui.press('tab')
+    
     pyautogui.press('tab')
     pyautogui.press('enter')
+    
+    
+    #license_name
     pyautogui.press('tab')
+    pyperclip.copy(license_name.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
+
+    #license_url
     pyautogui.press('tab')
     pyautogui.typewrite(license_url, interval=interval)
 
     #attribution_text
     pyautogui.press('tab')
-    pyautogui.typewrite(attribution_text, interval=interval)
+    #pyautogui.typewrite(attribution_text, interval=interval)
+    pyperclip.copy(attribution_text.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
 
     #attribution_url
     pyautogui.press('tab')
     pyautogui.typewrite(attribution_url, interval=interval)
+    
+    #terms_url
+    pyautogui.press('tab')
+    pyautogui.typewrite(terms_url, interval=interval)
 
     #OK
-    pyautogui.press('tab')
     pyautogui.press('tab')
     pyautogui.press('enter')
 
@@ -221,26 +238,28 @@ def add_service_geojson():
     pyautogui.press('tab')
     pyautogui.press('enter')
 
-    #addition enter in case licensing info was missing
+    #additional enter in case licensing info was missing
     pyautogui.press('enter')
     #raw_input("Press Enter to continue...")
 
-def add_geo():
-    #TODO: Add polygon
+def add_geo(wkt):
+    #TODO: Add polygon, only possible at the moment if QMS service ID is known, i.e. service already exists
     pass
+    #cmd = ''
+    #os.system(cmd)
 
 if __name__ == '__main__':
     #buttons
-    addservice_btn_x = 1500
-    addservice_btn_y = 170
-    addwms_btn_x = 900
-    addwms_btn_y = 500
-    addtms_btn_x = 700
-    addtms_btn_y = 500
-    addgeojson_btn_x = 500
-    addgeojson_btn_y = 500
+    addservice_btn_x = 1800
+    addservice_btn_y = 150
+    addwms_btn_x = 1200
+    addwms_btn_y = 600
+    addtms_btn_x = 900
+    addtms_btn_y = 600
+    addgeojson_btn_x = 600
+    addgeojson_btn_y = 600
 
-    sleep = 10 #seconds
+    sleep = 15 #seconds
     interval = 0.05
     imageformats = ['PNG','PNG8','PNG24','PNG32','GIF','BMP','JPEG','TIFF','TIFF8','GEOTIFF','GEOTIFF8','SVG']
 
@@ -260,11 +279,13 @@ if __name__ == '__main__':
                 name = row['name']
                 print name
                 url = row['url_qms']
-                layers = row['layers_qms']
 
                 prjs = row['available_projections']
                 if prjs != '':
-                    prjs_arr = [i.split(':')[1] for i in eval(prjs)]
+                    if ':' in prjs:
+                        prjs_arr = [i.split(':')[1] for i in eval(prjs)]
+                    else:
+                        prjs_arr = eval(prjs)
                 else:
                     prjs_arr = []
 
@@ -277,31 +298,34 @@ if __name__ == '__main__':
                 else:
                     prj = prjs_arr[0]
                 
-                imageformat = row['format_qms']
-                getparams = row['getparams_qms']
-                zmin = row['min_zoom']
-                zmax = row['max_zoom']
-                origintop = row['origintop']
+                if t == 'tms' or t == 'wms':
+                    layers = row['layers_qms']
+                    imageformat = row['format_qms']
+                    getparams = row['getparams_qms']
+                    zmin = row['min_zoom']
+                    zmax = row['max_zoom']
+                    origintop = row['origintop']
 
                 source = row['source']
                 description = row['description']
-
+                
+                license_name = row['license_name']
                 license_url = row['license_url']
                 attribution_text = row['attribution_text']
                 attribution_url = row['attribution_url']
+                terms_url = row['terms_url']
 
                 if t == 'tms':
                     add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_url,attribution_text,attribution_url)
-                    add_geo()
+                    add_geo(row['osmlab_wkt'])
                     #print url
                 elif t == 'wms':
                     add_service_wms(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
-                    add_geo()
+                    add_geo(row['osmlab_wkt'])
                     #print url
                 elif t == 'geojson':
-                    #add_service_geojson(name,url,layers,description,source,prj,imageformat,getparams,license_url,attribution_text,attribution_url)
-                    add_geo()
-                    continue
+                    add_service_geojson(name,url,description,source,str(prj),license_name,license_url,attribution_text,attribution_url,terms_url)
+                    #add_geo(row['osmlab_wkt'])
                 else:
                     continue
 

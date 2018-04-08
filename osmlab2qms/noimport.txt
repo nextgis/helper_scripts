@@ -3,3 +3,8 @@ stamen-terrain-background
 landsat
 SIGPAC-Spain
 CRAIG-Auvergne-2013
+CRAIG-Auvergne-2016
+orthophoto_lyon_2012
+orthophoto_lyon_2015_8cm
+Delaware2012Orthophotography
+Delaware2017Orthophotography

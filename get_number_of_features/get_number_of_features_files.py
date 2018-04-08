@@ -11,19 +11,22 @@ import shutil
 import csv
 import platform
 
-path = 'c:/tools/7-Zip/'
+if platform.uname()[0] == 'Windows':
+    path = 'c:/tools/7-Zip/'
+else:
+    path = ''
 
 with open('regs.csv', 'rb') as f:
     reader = csv.reader(f)
     regs = list(reader)
 
-os.chdir('all')
+#os.chdir('all')
 files = glob.glob('*.7z')
 output = open('result.csv','wb')
 output.write('ID;REG;LAYER;NUM\n')
 
 for f in files:
-    f_reg = f.split('-18')[0]
+    f_reg = f.split('-2018')[0]
     reg = [x for x in regs if f_reg == x[1]]
     if len(reg) == 1:
         print('Processing ' + f)

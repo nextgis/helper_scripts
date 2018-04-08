@@ -44,10 +44,3 @@ if args.bfile:
 payload = {'boundary': boundary_str}
 resp = session.patch(QMS_URL + str(args.sid) + '/', data=payload)
 assert resp.status_code < 400
-
-
-
-
-
-
-
