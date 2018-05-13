@@ -114,7 +114,7 @@ def getLayerDomain(url):
 
 def prepare_url(url):
     url = url.replace('//a.','//')
-    if '-y' in url and row['origintop'] == True:
+    if '-y' in url: # and row['origintop'] == True:
         url = url.replace('{-y}','{y}')
     if url.find('http://') == 0: url = url.replace('http://','',1)
     if url.find('https://') == 0: url = url.replace('https://','',1)
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     data = openjson('imagery.json')
     qmslayers=openjson('qms_full.json')
     
-    fieldnames = ['osmlab_id','qms_id','name', 'type', 'exist_qms','origintop','poly','changes_sync','url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','attribution_text','attribution_url','available_projections', 'source', 'description','osmlab_wkt','qms_wkt']
+    fieldnames = ['osmlab_id','qms_id','name', 'type', 'exist_qms','origintop','poly','changes_sync','url','url_qms','layers_qms','format_qms','getparams_qms','country_code','start_date','end_date','min_zoom','max_zoom','best','overlay','license_url','copyright_text','copyright_url','available_projections', 'source', 'description','osmlab_wkt','qms_wkt']
     
     with open('list.csv', 'wb') as csvfile:
         listwriter = csv.DictWriter(csvfile, fieldnames, delimiter=';',quotechar='"', quoting=csv.QUOTE_ALL)
@@ -338,10 +338,10 @@ if __name__ == '__main__':
 
             if 'attribution' in layer:
                 if 'text' in layer['attribution']:
-                    row['attribution_text'] = layer['attribution']['text'].encode('utf8')
+                    row['copyright_text'] = layer['attribution']['text'].encode('utf8')
             if 'attribution' in layer:
                 if 'url' in layer['attribution']:
-                    row['attribution_url'] = layer['attribution']['url'].encode('utf8')
+                    row['copyright_url'] = layer['attribution']['url'].encode('utf8')
             if 'extent' in layer:
                 if 'max_zoom' in layer['extent']:
                     row['max_zoom'] = layer['extent']['max_zoom']
