@@ -45,6 +45,7 @@ args = parser.parse_args()
 
 #################BOT TOKEN##################
 token = open('token').read().rstrip('\n')
+tele = open('tele').read().rstrip('\n')
 #################BOT TOKEN##################
 
 method = 'sendMessage'
@@ -88,8 +89,12 @@ def get_name(guid):
     
 def notify(type,link,name,url,submitter):
     text = u'New %s QMS service %s\nName: %s\nSubmitter: %s\nUrl: %s' % (type,link,name,submitter,url)
-
-    response = requests.post(
+    
+    session = requests.session()
+    session.proxies = {'http': tele,
+                   'https':  tele}
+                   
+    response = session.post(
         url='https://api.telegram.org/bot{0}/{1}'.format(token, method),
         data={'chat_id': chat_id, 'text': text}
     ).json()

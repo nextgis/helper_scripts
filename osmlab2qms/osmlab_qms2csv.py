@@ -206,7 +206,7 @@ def url_osmlabTMS2qms(url):
         url = re.sub(regex,new_val,url)
     url = url.replace('{zoom}','{z}')
     url = url.replace('{zoom-1}','{z-1}')
-    if '-y' in url and row['origintop'] == True:
+    if '-y' in url: #and row['origintop'] == True:
         url = url.replace('{-y}','{y}')
 
     return url

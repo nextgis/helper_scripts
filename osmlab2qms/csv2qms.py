@@ -24,7 +24,8 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_
 
     #enter service name
     pyautogui.press('tab')
-    pyautogui.typewrite(name, interval=interval)
+    pyperclip.copy(name.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
 
     #enter service url
     pyautogui.press('tab')
@@ -52,13 +53,15 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_
     pyautogui.typewrite(zmax, interval=interval)
 
     #origintop
-    if origintop == True:
-        #pyautogui.press('tab')
+    if origintop == 'False':
+        pyautogui.press('tab')
         pyautogui.press('space')
     else:
         pyautogui.press('tab')
 
     #license_url
+    pyautogui.press('tab')
+    pyautogui.press('tab')
     pyautogui.press('tab')
     pyautogui.press('enter')
     pyautogui.press('tab')
@@ -67,7 +70,8 @@ def add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_
 
     #attribution_text
     pyautogui.press('tab')
-    pyautogui.typewrite(attribution_text, interval=interval)
+    pyperclip.copy(attribution_text.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
 
     #attribution_url
     pyautogui.press('tab')
@@ -99,7 +103,8 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
 
     #enter service name
     pyautogui.press('tab')
-    pyautogui.typewrite(name, interval=interval)
+    pyperclip.copy(name.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
 
     #enter service url
     pyautogui.press('tab')
@@ -140,6 +145,8 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
     #license_url
     pyautogui.press('tab')
     pyautogui.press('tab')
+    pyautogui.press('tab')
+    pyautogui.press('tab')
     pyautogui.press('enter')
     pyautogui.press('tab')
     pyautogui.press('tab')
@@ -147,7 +154,8 @@ def add_service_wms(name,url,layers,description,source,prj,imageformat,getparams
 
     #attribution_text
     pyautogui.press('tab')
-    pyautogui.typewrite(attribution_text, interval=interval)
+    pyperclip.copy(attribution_text.decode('utf-8'))
+    pyautogui.hotkey("ctrl", "v")
 
     #attribution_url
     pyautogui.press('tab')
@@ -259,7 +267,7 @@ if __name__ == '__main__':
     addgeojson_btn_x = 600
     addgeojson_btn_y = 600
 
-    sleep = 15 #seconds
+    sleep = 25 #seconds
     interval = 0.05
     imageformats = ['PNG','PNG8','PNG24','PNG32','GIF','BMP','JPEG','TIFF','TIFF8','GEOTIFF','GEOTIFF8','SVG']
 
@@ -273,7 +281,7 @@ if __name__ == '__main__':
         csvreader = csv.DictReader(csvfile, delimiter=';')
 
         for row in csvreader:
-            if row['id'] not in noimport and row['exist_qms'] == 'False' and len(row['url_qms']) < 500:
+            if row['osmlab_id'] not in noimport and row['exist_qms'] == 'False' and len(row['url_qms']) < 500:
                 t = row['type']
 
                 name = row['name']
@@ -309,11 +317,11 @@ if __name__ == '__main__':
                 source = row['source']
                 description = row['description']
                 
-                license_name = row['license_name']
+                license_name = '' #row['license_name']
                 license_url = row['license_url']
-                attribution_text = row['attribution_text']
-                attribution_url = row['attribution_url']
-                terms_url = row['terms_url']
+                attribution_text = row['copyright_text']
+                attribution_url = row['copyright_url']
+                terms_url = '' #row['terms_url']
 
                 if t == 'tms':
                     add_service_tms(name,url,description,source,prj,zmin,zmax,origintop,license_url,attribution_text,attribution_url)
