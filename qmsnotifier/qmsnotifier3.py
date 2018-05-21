@@ -91,8 +91,7 @@ def notify(type,link,name,url,submitter):
     text = u'New %s QMS service %s\nName: %s\nSubmitter: %s\nUrl: %s' % (type,link,name,submitter,url)
     
     session = requests.session()
-    session.proxies = {'http': tele,
-                   'https':  tele}
+    session.proxies = {'https':  tele}
                    
     response = session.post(
         url='https://api.telegram.org/bot{0}/{1}'.format(token, method),
