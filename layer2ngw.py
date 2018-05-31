@@ -30,7 +30,7 @@ sys.setdefaultencoding('utf8')
 #для создания ключей транслитом
 from transliterate import translit, get_available_language_codes
 
-import time
+from time import gmtime, strftime, sleep
 
 import argparse
 def argparser_prepare():
@@ -262,12 +262,11 @@ for dirpath, dnames, fnames in os.walk(destdir):
             catalog_data = get(URL + '/api/resource/?parent=' + str(grpid))
             found = False
             for element in catalog_data:
-                if element['resource']['keyname'] == keyname:
+                if element['resmeta']['items']['keyname'] == keyname:
                     found = True
 
             if found == True:
                 print 'file' + filename + 'aleady in ngw, skip this file'
-                #сюда нужно проверку на существование стиля
                 continue #to next file
             
 
@@ -283,14 +282,16 @@ for dirpath, dnames, fnames in os.walk(destdir):
             # Here may be delay up to 5 minutes for upload
 
             print 'Wait 60 seconds beetwen put file and create layer'
-            time.sleep(60) # большие растры почему-то выдают ошибку 
+            sleep(60) # большие растры почему-то выдают ошибку 
 
 
+            uploadtimestamp=strftime("%Y-%m-%d %H:%M:%S", gmtime())
             # Query for create layer
             # If raster is big, ngw return here HTML page with 504 error, but it's okay, it start to generate pyramides
             try:
                 rastlyr = post(courl(), json=dict(
                     resource=dict(cls='raster_layer', parent=grpref, keyname=keyname, display_name=os.path.splitext(filename)[0]),
+                    resmeta=dict(items=dict(keyname=keyname,uploadtimestamp=uploadtimestamp) ),
                     raster_layer=dict(srs=srs, source=tif)
                 ))
             except:
@@ -310,17 +311,17 @@ for dirpath, dnames, fnames in os.walk(destdir):
                 catalog_data = get(URL + '/api/resource/?parent=' + str(grpid))
                 layer_appears = False
                 for element in catalog_data:
-                    if element['resource']['keyname'] == keyname:
+                    if element['resmeta']['items']['keyname'] == keyname:
                         layer_appears = True
                         rastlyr = element['resource']['id']
                 if layer_appears == False:
                     if attempts < 1:
                         print 'wait 10 sec for layer creation'
-                        time.sleep(10)
+                        sleep(10)
                         attempts = attempts + 1
                     else:
                         print 'wait 60 sec for layer creation'
-                        time.sleep(60)
+                        sleep(60)
                         attempts = attempts + 1            
             print 'layer appear, id=' + str(rastlyr)
             
