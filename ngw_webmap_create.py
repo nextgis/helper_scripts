@@ -172,8 +172,8 @@ for style in stylesForService:
     webmapLayerDef['layer_style_id']=style['resource']['id']
 
     layersForWebmap.append(webmapLayerDef)
-# Создаём WMS-сервис
 
+#содержимое папки
 RootElements=list()
 element = dict(
         item_type='group',group_expanded=True,display_name=group['resource']['display_name'],
@@ -181,11 +181,10 @@ element = dict(
     )
 RootElements.append(element)
 
+# В children должен быть список из словарей
 webmap = post(courl(), json=dict(
     resource=dict(cls='webmap', parent=dict(id=grpid), display_name=group['resource']['display_name']+' Вебкарта'),
-
     webmap=dict(
-
         root_item=dict(
 	item_type='root',
     children=RootElements ) )))     
