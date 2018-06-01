@@ -116,9 +116,9 @@ grpid=PARENT
 
 group = get(iturl(grpid))
 
-tree = get(URL + '/resource/store/')
-print tree
-quit()
+# Получить все элементы любого уровня вложенности это слишком олимпиадная задача
+
+
 
 # Проходим по группе, определяем данные слоёв
 
