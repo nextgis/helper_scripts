@@ -116,7 +116,9 @@ grpid=PARENT
 
 group = get(iturl(grpid))
 
-
+tree = get(URL + '/resource/store/')
+print tree
+quit()
 
 # Проходим по группе, определяем данные слоёв
 
