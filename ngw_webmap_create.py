@@ -174,16 +174,21 @@ for style in stylesForService:
     layersForWebmap.append(webmapLayerDef)
 # Создаём WMS-сервис
 
+RootElements=list()
+element = dict(
+        item_type='group',group_expanded=True,display_name=group['resource']['display_name'],
+        children=layersForWebmap
+    )
+RootElements.append(element)
+
 webmap = post(courl(), json=dict(
     resource=dict(cls='webmap', parent=dict(id=grpid), display_name=group['resource']['display_name']+' Вебкарта'),
-    #keyname=None, 
-    #desctiption=None,
-    webmap=dict(
-        #extent_left=None,
-        #extent_right=None,
-        #extent_bottom=None,
-        #extent_top=None,
-        root_item=dict(item_type='root',children=layersForWebmap ) )))     
 
+    webmap=dict(
+
+        root_item=dict(
+	item_type='root',
+    children=RootElements ) )))     
+    
 
 quit() 
