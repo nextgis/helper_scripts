@@ -30,6 +30,9 @@ sys.setdefaultencoding('utf8')
 #для создания ключей транслитом
 from transliterate import translit, get_available_language_codes
 
+#для создания альфаканалов
+import tempfile
+
 from time import gmtime, strftime, sleep
 
 import argparse
@@ -269,15 +272,23 @@ for dirpath, dnames, fnames in os.walk(destdir):
                 print 'file' + filename + 'aleady in ngw, skip this file'
                 continue #to next file
             
-
+            convert = True
+            if convert:
+                tf = tempfile.NamedTemporaryFile(delete=False)
+                
+                cmd = 'gdalwarp -t_srs EPSG:3857 -multi -dstalpha -dstnodata none -wo \
+"UNIFIED_SRC_NODATA=YES" -co COMPRESS=JPEG  ' + filepath + ' ' + tf.name
+                print cmd
+                os.system(cmd)
             
             print "uploading "+filepath          
             # Upload raster file
-            with open(filepath, 'rb') as fd:
+            with open(tf.name, 'rb') as fd:
                 tif = put(URL + '/api/component/file_upload/upload', data=fd)
 
             # ???
             srs = dict(id=3857)
+            os.unlink(tf.name)
 
             # Here may be delay up to 5 minutes for upload
 
