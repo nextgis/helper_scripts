@@ -265,8 +265,11 @@ for dirpath, dnames, fnames in os.walk(destdir):
             catalog_data = get(URL + '/api/resource/?parent=' + str(grpid))
             found = False
             for element in catalog_data:
-                if element['resmeta']['items']['keyname'] == keyname:
-                    found = True
+                try:
+                    if element['resmeta']['items']['keyname'] == keyname:
+                        found = True
+                except:
+                    found = False
 
             if found == True:
                 print 'file' + filename + 'aleady in ngw, skip this file'
@@ -322,9 +325,12 @@ for dirpath, dnames, fnames in os.walk(destdir):
                 catalog_data = get(URL + '/api/resource/?parent=' + str(grpid))
                 layer_appears = False
                 for element in catalog_data:
-                    if element['resmeta']['items']['keyname'] == keyname:
-                        layer_appears = True
-                        rastlyr = element['resource']['id']
+                    try:
+                        if element['resmeta']['items']['keyname'] == keyname:
+                            layer_appears = True
+                            rastlyr = element['resource']['id']
+                    except:
+                        pass
                 if layer_appears == False:
                     if attempts < 1:
                         print 'wait 10 sec for layer creation'

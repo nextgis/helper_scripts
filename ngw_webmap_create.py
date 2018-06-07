@@ -13,6 +13,7 @@ import json
 from transliterate import translit, get_available_language_codes
 import re
 
+from operator import itemgetter
 
 import argparse
 def argparser_prepare():
@@ -33,6 +34,9 @@ Creating WMS-service with all vector and rasters styles from this group.
     parser.add_argument('--login', default='administrator', required=False, help = 'ngw login')
     parser.add_argument('--password', default='admin', required=False, help = 'ngw password')
     parser.add_argument('--parent', type=int, help='id of parent group', default=0, required=False)
+    sorting_group_parser = parser.add_mutually_exclusive_group(required=False)
+    sorting_group_parser.add_argument('--reverse', dest='reverse', help = 'Reverse sort', action='store_true',default=False)
+    sorting_group_parser.add_argument('--straight', dest='reverse', help = 'straight sort', action='store_false',default=True)
     
     parser.epilog = \
         '''Samples: 
@@ -58,8 +62,8 @@ args = parser.parse_args()
 URL = args.url
 AUTH = (args.login, args.password)
 PARENT=args.parent
+REVERSE = args.reverse
 args = None #don't use afterwards
-
 
 
 s = requests.Session()
@@ -152,6 +156,13 @@ for style in stylesForService:
     wmsLayerDef['min_scale_denom']=None
     wmsLayerDef['max_scale_denom']=None
     layersForWMS.append(wmsLayerDef)
+	
+#Sort
+newlist = sorted(layersForWMS, key=lambda k: k['display_name'], reverse = REVERSE) 
+layersForWMS = newlist
+newlist = None
+
+	
 # Создаём WMS-сервис
 '''
 wmsserv = post(courl(), json=dict(
@@ -176,7 +187,7 @@ for style in stylesForService:
     layersForWebmap.append(webmapLayerDef)
 
 #Sort
-newlist = sorted(webmapLayerDef, key=lambda k: k['display_name']) 
+newlist = sorted(layersForWebmap, key=lambda k: k['display_name'], reverse = REVERSE) 
 layersForWebmap = newlist
 newlist = None
 
