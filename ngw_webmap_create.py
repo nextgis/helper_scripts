@@ -175,6 +175,11 @@ for style in stylesForService:
 
     layersForWebmap.append(webmapLayerDef)
 
+#Sort
+newlist = sorted(webmapLayerDef, key=lambda k: k['display_name']) 
+layersForWebmap = newlist
+newlist = None
+
 #содержимое папки
 RootElements=list()
 element = dict(
