@@ -277,7 +277,7 @@ for dirpath, dnames, fnames in os.walk(destdir):
                 tf = tempfile.NamedTemporaryFile(delete=False)
                 
                 cmd = 'gdalwarp -t_srs EPSG:3857 -multi -dstalpha -dstnodata none -wo \
-"UNIFIED_SRC_NODATA=YES" -co COMPRESS=JPEG  "' + filepath + ' ' + tf.name + '"'
+"UNIFIED_SRC_NODATA=YES" -co COMPRESS=JPEG  "' + filepath + '" ' + tf.name + ''
                 print cmd
                 os.system(cmd)
             
