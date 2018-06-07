@@ -37,6 +37,7 @@ import requests
 import argparse
 import json
 import os
+import sys
 from bs4 import BeautifulSoup
 
 parser = argparse.ArgumentParser()
@@ -100,7 +101,7 @@ def notify(type,link,name,url,submitter):
     print(response)
     
 if __name__ == '__main__':
-    os.remove("qms_old.json")
+    if os.path.exists("qms_old.json"): os.remove("qms_old.json")
 
     if os.path.exists("qms.json"):
         os.rename("qms.json","qms_old.json")
@@ -121,4 +122,4 @@ if __name__ == '__main__':
                 submitter = get_name(item['submitter'])
                 notify(type,link,name,url,submitter)
     else:
-        notify('type','link','name','Something went wrong, change the service','submitter')
+        notify('type','link','name','Something went wrong, qms.json is missing','submitter')
