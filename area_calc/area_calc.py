@@ -4,21 +4,24 @@
 #Add field with area
 
 
-from osgeo import ogr
+from osgeo import ogr, osr
 import os
 
 def calc_area():
 
         area_fieldname = 'Area'
-        filename = "../states.shp"
+
+        filename = r"c:\temp\zones2.shp"
+        filename_output = r"c:\temp\zones3.shp"
+        overwrite = True
+        
         driver = ogr.GetDriverByName("ESRI Shapefile")
-        dataSource = driver.Open(filename, 0)
+        dataSource = driver.Open(filename,1)
         layer = dataSource.GetLayer()
 
-        #add field for area
-        field_defenition = ogr.FieldDefn(area_fieldname,ogr.OFTString)
-        layer.CreateField(field_denenition)
 
+
+        
         frist_feature = layer.GetNextFeature()
         geometry = frist_feature.GetGeometryRef()
         layer.ResetReading()
@@ -46,7 +49,7 @@ def calc_area():
         if int(centroid.GetX()) < 0 : 
             epsg_utm = zone + 32700 #south hemisphere
         
-        logger.info("EPSG: %s" % (str(epsg_utm)))
+        
 
         #reproject area from his CRS to UTM
         source = layer.GetSpatialRef()
@@ -55,30 +58,60 @@ def calc_area():
         target.ImportFromEPSG(epsg_utm)
 
         transform = osr.CoordinateTransformation(source, target)
-        geom_boundary_3857 = ogr.CreateGeometryFromWkt(boundary_wkt_geom)
-        geom_boundary_3857.Transform(transform)
-        geom_boundary_utm = geom_boundary_3857
-        del geom_boundary_3857
-
-        #walk by layer1 features
         
-        for feature in layer:
-            ngwFeatureId = feature['id']
-            fields = feature['fields']
+        #create output layer
+        driver_output = ogr.GetDriverByName("ESRI Shapefile")
+        if os.path.exists(filename_output):
+            if overwrite:
+                driver_output.DeleteDataSource(filename_output)
+            else:
+                raise IOError("file already exists")
+
+        outdatasource = driver_output.CreateDataSource(filename_output)
+        layername = layer.GetName()
+        #print layername
+        #quit()
+        outlayer = outdatasource.CreateLayer('outlayer', geom_type=ogr.wkbMultiPolygon)
+        
+        outlayerdef = outlayer.GetLayerDefn()
+
+        srclayerDefinition = layer.GetLayerDefn()
+        for i in range(srclayerDefinition.GetFieldCount()):
+            outlayer.CreateField(srclayerDefinition.GetFieldDefn(i))
+        
+        
+        #add field for area
+        field_defenition = ogr.FieldDefn(area_fieldname,ogr.OFTString)
+        outlayer.CreateField(field_defenition)
+        
+        #walk by layer1 features
+        layer.ResetReading()
+        feature = layer.GetNextFeature()
+        while feature:
             
             geom_feature = feature.GetGeometryRef()
             geom_feature.Transform(transform)
-
             #calculate 
             total_area = geom_feature.GetArea()
-
-            #write calc result to attribute
-            feature.SetField(area_fieldname,str(total_area))
-
-
             
-            #update features in ngw
+            outFeature = ogr.Feature(outlayerdef)
+            outFeature.SetGeometry(feature.GetGeometryRef())
+            
+
+            for j in range( srclayerDefinition.GetFieldCount()):
+                outFeature.SetField(srclayerDefinition.GetFieldDefn(j).GetName(), feature.GetField(j))
+                
+            #write calc result to attribute
+            outFeature.SetField(area_fieldname,str(total_area))
+            #feature.SetGeometry(feature.GetGeometryRef())
+            if outlayer.CreateFeature(outFeature) != 0:
+                print 'outlayer.CreateFeature failed'
+                
+            
+            feature = layer.GetNextFeature()
+        layer.ResetReading()
+        dataSource.Destroy()
+        outdatasource = None
 
 
-
-layer.ResetReading()
+calc_area()
