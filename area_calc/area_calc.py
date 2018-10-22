@@ -73,9 +73,10 @@ def calc_area():
 
         outdatasource = driver_output.CreateDataSource(filename_output)
         layername = layer.GetName()
-        #print layername
-        #quit()
-        outlayer = outdatasource.CreateLayer('outlayer', geom_type=ogr.wkbMultiPolygon, options=['ENCODING=UTF-8'])
+
+        srs = osr.SpatialReference()
+        srs.ImportFromEPSG(4326)
+        outlayer = outdatasource.CreateLayer('outlayer', srs, geom_type=ogr.wkbMultiPolygon, options=['ENCODING=UTF-8'])
         
         outlayerdef = outlayer.GetLayerDefn()
 
@@ -93,22 +94,26 @@ def calc_area():
         feature = layer.GetNextFeature()
         while feature:
             
+            outFeature = ogr.Feature(outlayerdef)
+            outFeature.SetFrom(feature)
+            
+            #geometry = feature.GetGeometryRef()
+            #geometry = ogr.ForceToMultiPolygon(geometry)
+            #outFeature.SetGeometry(geometry)
+            #del geometry 
             geom_feature = feature.GetGeometryRef()
             geom_feature.Transform(transform)
             #calculate 
             total_area = geom_feature.GetArea()
             
-            outFeature = ogr.Feature(outlayerdef)
-            outFeature.SetGeometry(feature.GetGeometryRef())
             
 
             #for j in range( srclayerDefinition.GetFieldCount()):
             #    outFeature.SetField(srclayerDefinition.GetFieldDefn(j).GetName(), feature.GetField(j))
-            outFeature.SetFrom(feature)
                 
+            print outFeature.GetGeometryRef().Centroid().ExportToWkt()
             #write calc result to attribute
             outFeature.SetField(area_fieldname,str(total_area))
-            #feature.SetGeometry(feature.GetGeometryRef())
             if outlayer.CreateFeature(outFeature) != 0:
                 print 'outlayer.CreateFeature failed'
                 
