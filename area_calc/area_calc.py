@@ -7,14 +7,18 @@
 from osgeo import ogr, osr
 import os
 
+ogr.UseExceptions()
+
 def calc_area():
 
+        
         area_fieldname = 'Area'
 
         filename = r"c:\temp\zones2.shp"
         filename_output = r"c:\temp\zones3.shp"
         overwrite = True
         
+        #os.environ['SHAPE_ENCODING'] = "utf-8"
         driver = ogr.GetDriverByName("ESRI Shapefile")
         dataSource = driver.Open(filename,1)
         layer = dataSource.GetLayer()
@@ -71,7 +75,7 @@ def calc_area():
         layername = layer.GetName()
         #print layername
         #quit()
-        outlayer = outdatasource.CreateLayer('outlayer', geom_type=ogr.wkbMultiPolygon)
+        outlayer = outdatasource.CreateLayer('outlayer', geom_type=ogr.wkbMultiPolygon, options=['ENCODING=UTF-8'])
         
         outlayerdef = outlayer.GetLayerDefn()
 
@@ -98,8 +102,9 @@ def calc_area():
             outFeature.SetGeometry(feature.GetGeometryRef())
             
 
-            for j in range( srclayerDefinition.GetFieldCount()):
-                outFeature.SetField(srclayerDefinition.GetFieldDefn(j).GetName(), feature.GetField(j))
+            #for j in range( srclayerDefinition.GetFieldCount()):
+            #    outFeature.SetField(srclayerDefinition.GetFieldDefn(j).GetName(), feature.GetField(j))
+            outFeature.SetFrom(feature)
                 
             #write calc result to attribute
             outFeature.SetField(area_fieldname,str(total_area))
