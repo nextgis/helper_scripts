@@ -116,8 +116,7 @@ def calc_area_shp(source_filename, output_filename):
         layer.ResetReading()
 
 
-        #reproject layers from 3857 to utm for area calc
-        #layers should reprojected to utm before intersecting for more presision
+        #reproject layers  to utm for area calc
 
         #get centroid of boundary
         centroid = geometry.Centroid()
@@ -159,9 +158,8 @@ def calc_area_shp(source_filename, output_filename):
         outdatasource = driver_output.CreateDataSource(filename_output)
         layername = layer.GetName()
 
-        srs = osr.SpatialReference()
-        srs.ImportFromEPSG(4326)
-        outlayer = outdatasource.CreateLayer('outlayer', srs, geom_type=ogr.wkbMultiPolygon, options=['ENCODING=UTF-8'])
+
+        outlayer = outdatasource.CreateLayer('outlayer', layer.GetSpatialRef(), geom_type=ogr.wkbMultiPolygon, options=['ENCODING=UTF-8'])
         
         outlayerdef = outlayer.GetLayerDefn()
 
@@ -171,7 +169,9 @@ def calc_area_shp(source_filename, output_filename):
         
         
         #add field for area
-        field_defenition = ogr.FieldDefn(area_fieldname,ogr.OFTString)
+        field_defenition = ogr.FieldDefn(area_fieldname,ogr.OFTReal)
+        field_defenition.SetWidth(20)
+        field_defenition.SetPrecision(3)
         outlayer.CreateField(field_defenition)
         
         #walk by layer1 features
