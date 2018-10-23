@@ -4,8 +4,9 @@ zip-архив удаляется и создаётся заново, то ес�
 Установка
 ----------------
 
+На Windows запустите консоль NextGIS Command Prompt.
 ```
-git clone
+git clone https://github.com/nextgis/helper_scripts.git
 cd helper_scripts\area_calc
 pip install -r requirements.txt
 ```
@@ -13,7 +14,7 @@ pip install -r requirements.txt
 Использование
 -----------------
 
-На Windows скрипт можно запускать через NextGIS Command Prompt
+На Windows скрипт можно запускать через NextGIS Command Prompt.
 
 Работа с zip-архивом:
 
