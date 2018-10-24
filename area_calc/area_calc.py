@@ -7,6 +7,7 @@
 from osgeo import ogr, osr, gdal
 import os
 import tempfile,shutil,zipfile
+from geographiclib.geodesic import Geodesic
 
 ogr.UseExceptions()
 
@@ -43,7 +44,7 @@ def detect_filetype(source_filename, output_filename=''):
         if output_filename == '' or output_filename == 'None':
             raise ValueError('Output name should be not null for work with shp')
             sys.exit(1)            
-        calc_area_shp(source_filename,output_filename)
+        calc_area_shp(source_filename,output_filename,mode='utm')
     elif source_filename.lower().endswith('.zip'):
         temporary_folder = tempfile.mkdtemp()
         temporary_folder_output = tempfile.mkdtemp()
@@ -106,8 +107,7 @@ def get_utm_zone_by_point(point,source_crs):
         
         return epsg_utm
         
-def calc_area_shp(source_filename, output_filename):
-
+def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
         
         area_fieldname = 'Area'
 
@@ -159,16 +159,34 @@ def calc_area_shp(source_filename, output_filename):
             outFeature = ogr.Feature(outlayerdef)
             outFeature.SetFrom(feature)
             
-            #reproject area from his CRS to UTM
-            geom_feature = feature.GetGeometryRef()
-            epsg_utm = get_utm_zone_by_point(geom_feature.Centroid(),source_crs)
-            target_crs = osr.SpatialReference()
-            target_crs.ImportFromEPSG(epsg_utm)
-            transform = osr.CoordinateTransformation(source_crs, target_crs)
-            geom_feature.Transform(transform)
-            
-            #calculate 
-            total_area = geom_feature.GetArea()
+            if mode == 'utm':
+                #reproject area from his CRS to UTM
+                geom_feature = feature.GetGeometryRef()
+                epsg_utm = get_utm_zone_by_point(geom_feature.Centroid(),source_crs)
+                target_crs = osr.SpatialReference()
+                target_crs.ImportFromEPSG(epsg_utm)
+                transform = osr.CoordinateTransformation(source_crs, target_crs)
+                geom_feature.Transform(transform)
+                
+                #calculate 
+                total_area = geom_feature.GetArea()
+            elif mode == 'geodesics':
+                #reproject area from his CRS to 4326
+                geom_feature = feature.GetGeometryRef()
+                target_crs = osr.SpatialReference()
+                target_crs.ImportFromEPSG(4326)
+                transform = osr.CoordinateTransformation(source_crs, target_crs)
+                geom_feature.Transform(transform)
+                
+                ring = geom.GetGeometryRef(0)
+                geod = Geodesic.WGS84
+                geod_polygon = geod.Polygon()
+                for p in xrange(ring.GetPointCount()):
+                    lon, lat, z = ring.GetPoint(p)
+                    geod_polygon.AddPoint(lon,lat)
+                
+                num, perim, s = p.Compute()
+                total_area = 666.666
              
             #write calc result to attribute
             outFeature.SetField(area_fieldname,str(total_area))
