@@ -4,7 +4,7 @@
 #Add field with area
 
 
-from osgeo import ogr, osr
+from osgeo import ogr, osr, gdal
 import os
 import tempfile,shutil,zipfile
 
@@ -45,7 +45,6 @@ def detect_filetype(source_filename, output_filename=''):
             sys.exit(1)            
         calc_area_shp(source_filename,output_filename)
     elif source_filename.lower().endswith('.zip'):
-        print 'zip'
         temporary_folder = tempfile.mkdtemp()
         temporary_folder_output = tempfile.mkdtemp()
         temporary_folder_zip = tempfile.mkdtemp()
@@ -105,7 +104,8 @@ def calc_area_shp(source_filename, output_filename):
         
         #os.environ['SHAPE_ENCODING'] = "utf-8"
         driver = ogr.GetDriverByName("ESRI Shapefile")
-        dataSource = driver.Open(filename,1)
+        #dataSource = driver.Open(filename,1) #,open_options=['ENCODING=UTF-8']
+        dataSource = gdal.OpenEx(filename,gdal.OF_VECTOR | gdal.OF_UPDATE,open_options=['ENCODING=UTF-8']) #,
         layer = dataSource.GetLayer()
 
 
@@ -205,7 +205,7 @@ def calc_area_shp(source_filename, output_filename):
             
             feature = layer.GetNextFeature()
         layer.ResetReading()
-        dataSource.Destroy()
+        dataSource = None
         outdatasource = None
 
 if __name__ == "__main__":
