@@ -91,6 +91,21 @@ def detect_filetype(source_filename, output_filename=''):
     else:
         raise ValueError('Input file should be .shp or .zip')
         sys.exit(1)
+        
+def get_utm_zone_by_point(point,source_crs):
+        target_crs = osr.SpatialReference()
+        target_crs.ImportFromEPSG(4326)
+        transform = osr.CoordinateTransformation(source_crs, target_crs)
+        point.Transform(transform)
+        #Get number of UTM zone for point using magic numbers 
+        x = int(point.GetX() // 6)
+        zone = x + 31
+        epsg_utm = zone + 32600
+        if int(point.GetX()) < 0 : 
+            epsg_utm = zone + 32700 #south hemisphere
+        
+        return epsg_utm
+        
 def calc_area_shp(source_filename, output_filename):
 
         
@@ -107,46 +122,7 @@ def calc_area_shp(source_filename, output_filename):
         #dataSource = driver.Open(filename,1) #,open_options=['ENCODING=UTF-8']
         dataSource = gdal.OpenEx(filename,gdal.OF_VECTOR | gdal.OF_UPDATE,open_options=['ENCODING=UTF-8']) #,
         layer = dataSource.GetLayer()
-
-
-
-        
-        frist_feature = layer.GetNextFeature()
-        geometry = frist_feature.GetGeometryRef()
-        layer.ResetReading()
-
-
-        #reproject layers  to utm for area calc
-
-        #get centroid of boundary
-        centroid = geometry.Centroid()
-        
-        #reproject centroid from his CRS to 4326
-        source = layer.GetSpatialRef()
-
-        target = osr.SpatialReference()
-        target.ImportFromEPSG(4326)
-
-        transform = osr.CoordinateTransformation(source, target)
-
-        centroid.Transform(transform)
-        #Get number of UTM zone for centroid using magic numbers 
-        x = int(centroid.GetX() // 6)
-        zone = x + 31
-        epsg_utm = zone + 32600
-        if int(centroid.GetX()) < 0 : 
-            epsg_utm = zone + 32700 #south hemisphere
-        
-        
-
-        #reproject area from his CRS to UTM
-        source = layer.GetSpatialRef()
-
-        target = osr.SpatialReference()
-        target.ImportFromEPSG(epsg_utm)
-
-        transform = osr.CoordinateTransformation(source, target)
-        
+      
         #create output layer
         driver_output = ogr.GetDriverByName("ESRI Shapefile")
         if os.path.exists(filename_output):
@@ -158,45 +134,42 @@ def calc_area_shp(source_filename, output_filename):
         outdatasource = driver_output.CreateDataSource(filename_output)
         layername = layer.GetName()
 
-
         outlayer = outdatasource.CreateLayer('outlayer', layer.GetSpatialRef(), geom_type=ogr.wkbMultiPolygon, options=['ENCODING=UTF-8'])
-        
         outlayerdef = outlayer.GetLayerDefn()
 
+        #copy fields definitions to new layer
         srclayerDefinition = layer.GetLayerDefn()
         for i in range(srclayerDefinition.GetFieldCount()):
             outlayer.CreateField(srclayerDefinition.GetFieldDefn(i))
         
-        
-        #add field for area
+        #add new real field for area
         field_defenition = ogr.FieldDefn(area_fieldname,ogr.OFTReal)
         field_defenition.SetWidth(20)
         field_defenition.SetPrecision(3)
         outlayer.CreateField(field_defenition)
         
-        #walk by layer1 features
+        
+        #walk by source layer features
+        source_crs = layer.GetSpatialRef()
         layer.ResetReading()
         feature = layer.GetNextFeature()
         while feature:
             
+            #copy feature to new layer
             outFeature = ogr.Feature(outlayerdef)
             outFeature.SetFrom(feature)
             
-            #geometry = feature.GetGeometryRef()
-            #geometry = ogr.ForceToMultiPolygon(geometry)
-            #outFeature.SetGeometry(geometry)
-            #del geometry 
+            #reproject area from his CRS to UTM
             geom_feature = feature.GetGeometryRef()
+            epsg_utm = get_utm_zone_by_point(geom_feature.Centroid(),source_crs)
+            target_crs = osr.SpatialReference()
+            target_crs.ImportFromEPSG(epsg_utm)
+            transform = osr.CoordinateTransformation(source_crs, target_crs)
             geom_feature.Transform(transform)
+            
             #calculate 
             total_area = geom_feature.GetArea()
-            
-            
-
-            #for j in range( srclayerDefinition.GetFieldCount()):
-            #    outFeature.SetField(srclayerDefinition.GetFieldDefn(j).GetName(), feature.GetField(j))
-                
-            
+             
             #write calc result to attribute
             outFeature.SetField(area_fieldname,str(total_area))
             if outlayer.CreateFeature(outFeature) != 0:
