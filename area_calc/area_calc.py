@@ -164,7 +164,7 @@ def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
         feature = layer.GetNextFeature()
         bar = Bar('Calculate areas', max=keys_count, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
         while feature:
-            bar.next()
+            #bar.next()
 
             #copy feature to new layer
             outFeature = ogr.Feature(outlayerdef)
@@ -194,10 +194,12 @@ def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
                 geod_polygon = geod.Polygon()
                 for p in xrange(ring.GetPointCount()):
                     lon, lat, z = ring.GetPoint(p)
+                    #print '{lon} - {lat}'.format(lon=lon,lat=lat)
                     geod_polygon.AddPoint(lon,lat)
 
-                num, perim, s = geod_polygon.Compute()
-                total_area = num
+                num, perim, total_area = geod_polygon.Compute()
+                pack = geod_polygon.Compute()
+                print pack
 
             #write calc result to attribute
             outFeature.SetField(area_fieldname,str(total_area))
