@@ -164,7 +164,7 @@ def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
         feature = layer.GetNextFeature()
         bar = Bar('Calculate areas', max=keys_count, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
         while feature:
-            #bar.next()
+            bar.next()
 
             #copy feature to new layer
             outFeature = ogr.Feature(outlayerdef)

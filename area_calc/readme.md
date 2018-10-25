@@ -4,9 +4,10 @@ zip-архив удаляется и создаётся заново, то ес�
 Установка
 ----------------
 
-На Windows запустите консоль NextGIS Command Prompt.
+На Ubuntu/mac
 ```
 git clone https://github.com/nextgis/helper_scripts.git
+pip install -r requirements.txt
 cd helper_scripts\area_calc
 ```
 
