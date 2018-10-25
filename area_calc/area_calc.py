@@ -8,6 +8,7 @@ from osgeo import ogr, osr, gdal
 import os
 import tempfile,shutil,zipfile
 from geographiclib.geodesic import Geodesic
+from progress.bar import Bar
 
 ogr.UseExceptions()
 
@@ -149,11 +150,21 @@ def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
         outlayer.CreateField(field_defenition)
 
 
+        #calculate count of footprints for progressbar
+        keys_count = 0
+        feature = layer.GetNextFeature()
+        while feature:
+                 keys_count = keys_count + 1
+                 feature = layer.GetNextFeature()
+        layer.ResetReading()
+
         #walk by source layer features
         source_crs = layer.GetSpatialRef()
         layer.ResetReading()
         feature = layer.GetNextFeature()
+        bar = Bar('Calculate areas', max=keys_count, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
         while feature:
+            bar.next()
 
             #copy feature to new layer
             outFeature = ogr.Feature(outlayerdef)
@@ -196,6 +207,7 @@ def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
 
             feature = layer.GetNextFeature()
         layer.ResetReading()
+        bar.finish()
         dataSource = None
         outdatasource = None
 
