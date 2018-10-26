@@ -74,14 +74,41 @@ def attrs2polys(points_filename, polygons_filename, result_filename='result.gpkg
     #spatial join of point and polygon layer with snapping point to neat feature
 
     #work in 3857
-
+    filename = "../spatialite/working.gpkg"
+    layername = 'myhouse'
+    driver_point = ogr.GetDriverByName("GPKG")
+    points_datasource = driver_point.Open(filename, 0)
+    points_layer = points_datasource.GetLayer(layername)
     #open points layer, copy features to MEMORY
-    #open polygons layer, copy features to MEMORY
-    #create multipolygon memory layer with features from point_layer_src
+    layer1_driver=ogr.GetDriverByName('MEMORY')
+    layer1_datasource=layer1_driver.CreateDataSource('memData')
+    #open the memory datasource with write access
+    tmp=layer1_driver.Open('memData',1)
+    layer1=layer1_datasource.CopyLayer(points_datasource.GetLayer(),'layer1',['OVERWRITE=YES'])
 
-    #берём INTERSECT точек и полигонов, то что пересеклось - называем JOIN_1pass и сохраняем в выход. То что
-    #То что не пересеклось - называем UnMathed-1ndPass, применяем к точкам буфер 7. Пересекаем с домами.
-    #То что пересеклось - называем JOIN_2pass, добавляем в выход
+    filename = "../building-polygon.shp"
+    layername = 'building-polygon'
+    driver_polygons = ogr.GetDriverByName("ESRI Shapefile")
+    polygons_datasource = driver_polygons.Open(filename, 0)
+    points_layer = polygons_datasource.GetLayer(layername)
+    #open points layer, copy features to MEMORY
+    layer2_driver=ogr.GetDriverByName('MEMORY')
+    layer2_datasource=layer2_driver.CreateDataSource('memData')
+    #open the memory datasource with write access
+    tmp=layer2_driver.Open('memData',1)
+    layer2=layer2_datasource.CopyLayer(points_datasource.GetLayer(),'layer2',['OVERWRITE=YES'])
 
-    #То что не пересеклось - называем UnMathed-2ndPass. Применяем буфер 7. Пересекаем с домами
-    #То что пересеклось - называем JOIN_3pass, добавляем в выход
+    join_1pass, unmatched_1pass = spatial_join(layer1,layer2)
+
+
+
+    buffer_1st_pass = buffer(buildings)
+    #actually тут должен делаться буфер, затем из буферов от building=apartments вычитаться буфера от building=yes,
+    #тогда если точка попадёт в буфер и жилого дома и магазина, то она притянется к жилому дому
+
+    join_2pass, unmatched_2pass = spatial_join(unmatched_1pass,buffer_1st_pass)
+    buffer_2st_pass = buffer(buffer_1st_pass)
+
+    join_3pass, unmatched_3pass = spatial_join(unmatched_2pass,buffer_2st_pass)
+
+    result_layer = join_layers([join_1pass,join_2pass,join_3pass])
