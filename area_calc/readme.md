@@ -7,7 +7,7 @@ zip-архив удаляется и создаётся заново, то ес�
 На Ubuntu/mac
 ```
 git clone https://github.com/nextgis/helper_scripts.git
-cd helper_scripts\area_calc
+cd helper_scripts/area_calc
 pip install -r requirements.txt
 ```
 
