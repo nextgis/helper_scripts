@@ -4,10 +4,12 @@
 #Add field with area
 
 
-from osgeo import ogr, osr, gdal
 import os
 import tempfile, shutil, zipfile
+
 from geographiclib.geodesic import Geodesic
+from osgeo import ogr, osr, gdal
+
 from progress.bar import Bar
 
 ogr.UseExceptions()
@@ -43,12 +45,12 @@ def zipdir(path, ziph):
             ziph.write(os.path.join(root, file))
 
 
-def detect_filetype(source_filename, output_filename=''):
+def main(source_filename, output_filename=''):
     if source_filename.lower().endswith('.shp'):
         if output_filename == '' or output_filename == 'None':
             raise ValueError('Output name should be not null for work with shp')
             sys.exit(1)
-        calc_area_shp(source_filename,output_filename)
+        calc_area_shp(source_filename, output_filename)
     elif source_filename.lower().endswith('.zip'):
         temporary_folder = tempfile.mkdtemp()
         temporary_folder_output = tempfile.mkdtemp()
@@ -122,11 +124,10 @@ def calc_area_shp(source_filename, output_filename):
             outlayer.CreateField(srclayerDefinition.GetFieldDefn(i))
 
         #add new real field for area
-        field_defenition = ogr.FieldDefn(area_fieldname,ogr.OFTReal)
+        field_defenition = ogr.FieldDefn(area_fieldname, ogr.OFTReal)
         field_defenition.SetWidth(20)
-        field_defenition.SetPrecision(3)
+        field_defenition.SetPrecision(4)
         outlayer.CreateField(field_defenition)
-
 
         #calculate count of footprints for progressbar
         keys_count = 0
@@ -158,17 +159,16 @@ def calc_area_shp(source_filename, output_filename):
             ring = geom_feature.GetGeometryRef(0)
             geod = Geodesic.WGS84
             geod_polygon = geod.Polygon()
+
             for p in xrange(ring.GetPointCount()):
                 lon, lat, z = ring.GetPoint(p)
                 #print '{lon} - {lat}'.format(lon=lon,lat=lat)
-                geod_polygon.AddPoint(lon,lat)
+                geod_polygon.AddPoint(lat, lon)
 
             num, perim, total_area = geod_polygon.Compute()
-            pack = geod_polygon.Compute()
-            print pack
 
             #write calc result to attribute
-            outFeature.SetField(area_fieldname,str(total_area))
+            outFeature.SetField(area_fieldname, abs(total_area))
             if outlayer.CreateFeature(outFeature) != 0:
                 print 'outlayer.CreateFeature failed'
 
@@ -182,4 +182,4 @@ def calc_area_shp(source_filename, output_filename):
 if __name__ == "__main__":
     parser = argparser_prepare()
     args = parser.parse_args()
-    detect_filetype(args.source_filename[0], args.output_filename[0]) #argparse unnamed args return as list
+    main(args.source_filename[0], args.output_filename[0]) 
