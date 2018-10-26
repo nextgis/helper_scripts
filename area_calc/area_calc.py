@@ -6,13 +6,15 @@
 
 from osgeo import ogr, osr, gdal
 import os
-import tempfile,shutil,zipfile
+import tempfile, shutil, zipfile
 from geographiclib.geodesic import Geodesic
 from progress.bar import Bar
 
 ogr.UseExceptions()
 
 import argparse
+
+
 def argparser_prepare():
 
     class PrettyFormatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -33,6 +35,7 @@ time python %(prog)s ../source.shp ../output.shp
         % {'prog': parser.prog}
     return parser
 
+
 def zipdir(path, ziph):
     # ziph is zipfile handle
     for root, dirs, files in os.walk(path):
@@ -45,7 +48,7 @@ def detect_filetype(source_filename, output_filename=''):
         if output_filename == '' or output_filename == 'None':
             raise ValueError('Output name should be not null for work with shp')
             sys.exit(1)
-        calc_area_shp(source_filename,output_filename,mode='utm')
+        calc_area_shp(source_filename,output_filename)
     elif source_filename.lower().endswith('.zip'):
         temporary_folder = tempfile.mkdtemp()
         temporary_folder_output = tempfile.mkdtemp()
@@ -66,27 +69,18 @@ def detect_filetype(source_filename, output_filename=''):
             raise ValueError('zip unpacked, but no .shp file found')
             sys.exit(1)
 
-        source_shp_filepath = os.path.join(temporary_folder,source_shp_filename)
-        output_shp_filepath = os.path.join(temporary_folder_output,source_shp_filename)
+        source_shp_filepath = os.path.join(temporary_folder, source_shp_filename)
+        output_shp_filepath = os.path.join(temporary_folder_output, source_shp_filename)
 
         calc_area_shp(source_shp_filepath, output_shp_filepath)
 
-        archive_filepath = os.path.join(temporary_folder_zip,os.path.basename(source_filename))+'.zip'
-        archive_filepath = os.path.join(temporary_folder_zip,os.path.splitext(os.path.basename(source_filename))[0])+'2'
-        #print archive_filepath
-        #print os.path.basename(source_shp_filename)
-
-        #zipf = zipfile.ZipFile(archive_filepath, 'w', zipfile.ZIP_DEFLATED)
-        #zipdir(temporary_folder_output, zipf)
-        #zipf.close()
+        archive_filepath = os.path.join(temporary_folder_zip,os.path.basename(source_filename)) + '.zip'
+        archive_filepath = os.path.join(temporary_folder_zip,os.path.splitext(os.path.basename(source_filename))[0]) + '2'
 
         shutil.make_archive(archive_filepath, 'zip', temporary_folder_output)
-        #print os.path.isfile(archive_filepath+'.zip')
 
-        #pack(temporary_shp,temporary_zip)
         shutil.move(archive_filepath+'.zip',source_filename)
 
-        #replace(temporary_zip,source_zip)
         shutil.rmtree(temporary_folder)
         shutil.rmtree(temporary_folder_output)
         shutil.rmtree(temporary_folder_zip)
@@ -94,33 +88,17 @@ def detect_filetype(source_filename, output_filename=''):
         raise ValueError('Input file should be .shp or .zip')
         sys.exit(1)
 
-def get_utm_zone_by_point(point,source_crs):
-        target_crs = osr.SpatialReference()
-        target_crs.ImportFromEPSG(4326)
-        transform = osr.CoordinateTransformation(source_crs, target_crs)
-        point.Transform(transform)
-        #Get number of UTM zone for point using magic numbers
-        x = int(point.GetX() // 6)
-        zone = x + 31
-        epsg_utm = zone + 32600
-        if int(point.GetX()) < 0 :
-            epsg_utm = zone + 32700 #south hemisphere
 
-        return epsg_utm
-
-def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
+def calc_area_shp(source_filename, output_filename):
 
         area_fieldname = 'Area'
 
-        #filename = r"c:\temp\zones2.shp"
-        #filename_output = r"c:\temp\zones3.shp"
         filename = source_filename
         filename_output = output_filename
         overwrite = True
 
         #os.environ['SHAPE_ENCODING'] = "utf-8"
         driver = ogr.GetDriverByName("ESRI Shapefile")
-        #dataSource = driver.Open(filename,1) #,open_options=['ENCODING=UTF-8']
         dataSource = gdal.OpenEx(filename,gdal.OF_VECTOR | gdal.OF_UPDATE,open_options=['ENCODING=UTF-8']) #,
         layer = dataSource.GetLayer()
 
@@ -154,8 +132,8 @@ def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
         keys_count = 0
         feature = layer.GetNextFeature()
         while feature:
-                 keys_count = keys_count + 1
-                 feature = layer.GetNextFeature()
+             keys_count = keys_count + 1
+             feature = layer.GetNextFeature()
         layer.ResetReading()
 
         #walk by source layer features
@@ -170,36 +148,24 @@ def calc_area_shp(source_filename, output_filename, mode = 'geodesics'):
             outFeature = ogr.Feature(outlayerdef)
             outFeature.SetFrom(feature)
 
-            if mode == 'utm':
-                #reproject area from his CRS to UTM
-                geom_feature = feature.GetGeometryRef()
-                epsg_utm = get_utm_zone_by_point(geom_feature.Centroid(),source_crs)
-                target_crs = osr.SpatialReference()
-                target_crs.ImportFromEPSG(epsg_utm)
-                transform = osr.CoordinateTransformation(source_crs, target_crs)
-                geom_feature.Transform(transform)
+            #reproject area from his CRS to 4326
+            geom_feature = feature.GetGeometryRef()
+            target_crs = osr.SpatialReference()
+            target_crs.ImportFromEPSG(4326)
+            transform = osr.CoordinateTransformation(source_crs, target_crs)
+            geom_feature.Transform(transform)
 
-                #calculate
-                total_area = geom_feature.GetArea()
-            elif mode == 'geodesics':
-                #reproject area from his CRS to 4326
-                geom_feature = feature.GetGeometryRef()
-                target_crs = osr.SpatialReference()
-                target_crs.ImportFromEPSG(4326)
-                transform = osr.CoordinateTransformation(source_crs, target_crs)
-                geom_feature.Transform(transform)
+            ring = geom_feature.GetGeometryRef(0)
+            geod = Geodesic.WGS84
+            geod_polygon = geod.Polygon()
+            for p in xrange(ring.GetPointCount()):
+                lon, lat, z = ring.GetPoint(p)
+                #print '{lon} - {lat}'.format(lon=lon,lat=lat)
+                geod_polygon.AddPoint(lon,lat)
 
-                ring = geom_feature.GetGeometryRef(0)
-                geod = Geodesic.WGS84
-                geod_polygon = geod.Polygon()
-                for p in xrange(ring.GetPointCount()):
-                    lon, lat, z = ring.GetPoint(p)
-                    #print '{lon} - {lat}'.format(lon=lon,lat=lat)
-                    geod_polygon.AddPoint(lon,lat)
-
-                num, perim, total_area = geod_polygon.Compute()
-                pack = geod_polygon.Compute()
-                print pack
+            num, perim, total_area = geod_polygon.Compute()
+            pack = geod_polygon.Compute()
+            print pack
 
             #write calc result to attribute
             outFeature.SetField(area_fieldname,str(total_area))
