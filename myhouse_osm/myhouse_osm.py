@@ -99,6 +99,7 @@ def attrs2polys(points_filename, polygons_filename, result_filename='result.gpkg
     layer2=layer2_datasource.CopyLayer(points_datasource.GetLayer(),'layer2',['OVERWRITE=YES'])
 
     join_1pass, unmatched_1pass = spatial_join(layer1,layer2)
+    
 
 
 
