@@ -7,10 +7,10 @@
 import os
 import tempfile, shutil, zipfile
 
-from geographiclib.geodesic import Geodesic
+
 from osgeo import ogr, osr, gdal
 
-from progress.bar import Bar
+
 
 ogr.UseExceptions()
 
@@ -33,6 +33,9 @@ def argparser_prepare():
     parser.epilog = \
         '''Samples:
 python %(prog)s ../2346.zip
+python %(prog)s --fieldname Ref ../2346.zip
+      For each zip in folder:
+find ~/tmp/folder_with_zips/ -name "*.zip" -exec "python %(prog)s --fieldname Ref {}" \;
 ''' \
         % {'prog': parser.prog}
     return parser
@@ -136,9 +139,9 @@ def add_field_shp(source_filename, output_filename, fieldname, fieldvalue):
         source_crs = layer.GetSpatialRef()
         layer.ResetReading()
         feature = layer.GetNextFeature()
-        bar = Bar('Add field', max=keys_count, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
+        #bar = Bar('Add field', max=keys_count, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
         while feature:
-            bar.next()
+            #bar.next()
 
             #copy feature to new layer
             outFeature = ogr.Feature(outlayerdef)
@@ -151,7 +154,7 @@ def add_field_shp(source_filename, output_filename, fieldname, fieldvalue):
 
             feature = layer.GetNextFeature()
         layer.ResetReading()
-        bar.finish()
+        #bar.finish()
         dataSource = None
         outdatasource = None
 
