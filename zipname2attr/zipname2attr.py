@@ -24,15 +24,15 @@ def argparser_prepare():
 
         max_help_position = 45
 
-    parser = argparse.ArgumentParser(description='''Script open ESRI Shapefile or zip with shapefile. Replace zip file with new with shp with added area field. \n Area calculated in UTM with meters''',
+    parser = argparse.ArgumentParser(description='''Script open zip with shapefile. Replace zip file with new with shp with zipname field.''',
             formatter_class=PrettyFormatter)
     parser.add_argument('source_filename', nargs=1)
-    parser.add_argument('output_filename', nargs='?',default='None')
+    parser.add_argument('--fieldname',default='Name')
+
 
     parser.epilog = \
         '''Samples:
-#upload all geojsons and geotiff from current folder
-time python %(prog)s ../source.shp ../output.shp
+python %(prog)s ../2346.zip
 ''' \
         % {'prog': parser.prog}
     return parser
@@ -45,13 +45,8 @@ def zipdir(path, ziph):
             ziph.write(os.path.join(root, file))
 
 
-def main(source_filename, output_filename=''):
-    if source_filename.lower().endswith('.shp'):
-        if output_filename == '' or output_filename == 'None':
-            raise ValueError('Output name should be not null for work with shp')
-            sys.exit(1)
-        calc_area_shp(source_filename, output_filename)
-    elif source_filename.lower().endswith('.zip'):
+def main(source_filename,fieldname):
+    if source_filename.lower().endswith('.zip'):
         temporary_folder = tempfile.mkdtemp()
         temporary_folder_output = tempfile.mkdtemp()
         temporary_folder_zip = tempfile.mkdtemp()
@@ -74,7 +69,9 @@ def main(source_filename, output_filename=''):
         source_shp_filepath = os.path.join(temporary_folder, source_shp_filename)
         output_shp_filepath = os.path.join(temporary_folder_output, source_shp_filename)
 
-        calc_area_shp(source_shp_filepath, output_shp_filepath)
+        zipname = os.path.splitext(os.path.basename(source_filename))[0]
+
+        add_field_shp(source_shp_filepath, output_shp_filepath,fieldname=fieldname, fieldvalue=zipname)
 
         archive_filepath = os.path.join(temporary_folder_zip,os.path.basename(source_filename)) + '.zip'
         archive_filepath = os.path.join(temporary_folder_zip,os.path.splitext(os.path.basename(source_filename))[0]) + '2'
@@ -91,9 +88,7 @@ def main(source_filename, output_filename=''):
         sys.exit(1)
 
 
-def calc_area_shp(source_filename, output_filename):
-
-        area_fieldname = 'Area'
+def add_field_shp(source_filename, output_filename, fieldname, fieldvalue):
 
         filename = source_filename
         filename_output = output_filename
@@ -115,7 +110,7 @@ def calc_area_shp(source_filename, output_filename):
         outdatasource = driver_output.CreateDataSource(filename_output)
         layername = layer.GetName()
 
-        outlayer = outdatasource.CreateLayer('outlayer', layer.GetSpatialRef(), geom_type=ogr.wkbMultiPolygon, options=['ENCODING=UTF-8'])
+        outlayer = outdatasource.CreateLayer('outlayer', layer.GetSpatialRef(), geom_type=layer.GetGeomType(), options=['ENCODING=UTF-8'])
         outlayerdef = outlayer.GetLayerDefn()
 
         #copy fields definitions to new layer
@@ -124,8 +119,8 @@ def calc_area_shp(source_filename, output_filename):
             outlayer.CreateField(srclayerDefinition.GetFieldDefn(i))
 
         #add new real field for area
-        field_defenition = ogr.FieldDefn(area_fieldname, ogr.OFTReal)
-        field_defenition.SetWidth(20)
+        field_defenition = ogr.FieldDefn(fieldname, ogr.OFTString)
+        field_defenition.SetWidth(250)
         field_defenition.SetPrecision(4)
         outlayer.CreateField(field_defenition)
 
@@ -141,7 +136,7 @@ def calc_area_shp(source_filename, output_filename):
         source_crs = layer.GetSpatialRef()
         layer.ResetReading()
         feature = layer.GetNextFeature()
-        bar = Bar('Calculate areas', max=keys_count, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
+        bar = Bar('Add field', max=keys_count, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
         while feature:
             bar.next()
 
@@ -149,29 +144,10 @@ def calc_area_shp(source_filename, output_filename):
             outFeature = ogr.Feature(outlayerdef)
             outFeature.SetFrom(feature)
 
-            #reproject area from his CRS to 4326
-            geom_feature = feature.GetGeometryRef()
-            target_crs = osr.SpatialReference()
-            target_crs.ImportFromEPSG(4326)
-            transform = osr.CoordinateTransformation(source_crs, target_crs)
-            geom_feature.Transform(transform)
-
-            ring = geom_feature.GetGeometryRef(0)
-            geod = Geodesic.WGS84
-            geod_polygon = geod.Polygon()
-
-            for p in xrange(ring.GetPointCount()):
-                lon, lat, z = ring.GetPoint(p)
-                #print '{lon} - {lat}'.format(lon=lon,lat=lat)
-                geod_polygon.AddPoint(lat, lon)
-
-            num, perim, total_area = geod_polygon.Compute()
-
             #write calc result to attribute
-            outFeature.SetField(area_fieldname, abs(total_area))
+            outFeature.SetField(fieldname, fieldvalue)
             if outlayer.CreateFeature(outFeature) != 0:
                 print 'outlayer.CreateFeature failed'
-
 
             feature = layer.GetNextFeature()
         layer.ResetReading()
@@ -182,4 +158,4 @@ def calc_area_shp(source_filename, output_filename):
 if __name__ == "__main__":
     parser = argparser_prepare()
     args = parser.parse_args()
-    main(args.source_filename[0], args.output_filename[0]) 
+    main(args.source_filename[0], args.fieldname)
