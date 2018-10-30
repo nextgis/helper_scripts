@@ -13,19 +13,9 @@ pip install --user -r requirements.txt
 
 Использование
 -----------------
-
-На Windows скрипт можно запускать через NextGIS Command Prompt.
-
+На Windows не работает.
 Работа с zip-архивом:
 
 ```
 python area_calc.py "c:\temp\folder\zipwithfile.zip"
 ```
-
-Работа с шейпфайлом:
-
-```
-python area_calc.py "c:\temp\zones.shp" "c:\temp\zones-area.shp"
-```
-
-При работе с Shapefile скрипт не меняет исходный файл, а только создаёт новый, и при запуске нужно указать два пути
