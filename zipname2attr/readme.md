@@ -8,7 +8,7 @@ zip-архив удаляется и создаётся заново, то ес�
 ```
 git clone https://github.com/nextgis/helper_scripts.git
 cd helper_scripts/zipname2attr
-pip install --user -r requirements.txt
+
 ```
 
 Использование
