@@ -50,10 +50,15 @@ def spatial_join(layer1, layer2):
     layer1_feature_count = layer1.GetFeatureCount()
     layer2_feature_count = layer2.GetFeatureCount()
 
-    for feature2 in layer1:
-        geom2 = feature2.GetGeometryRef()
-        for feature1 in layer1:
-            if geom2.Intersects(feature1.GetGeometryRef()):
+    layer1.ResetReading()
+    for feature1 in layer1:
+        geom1 = feature1.GetGeometryRef()
+        layer2.ResetReading()
+        for feature2 in layer2:
+            geom2 = feature2.GetGeometryRef()
+
+
+            if geom1.Intersects(geom2):
                 #outFeature = ogr.Feature(matched_layerdef)
                 '''
                 outFeature.SetGeometry(feature1)
@@ -70,8 +75,15 @@ def spatial_join(layer1, layer2):
                 '''
                 layer_unmatched.CreateFeature(feature1)
                 #outFeature = None
+            geom2 = None
+        geom1 = None
 
-    print 'matched: {matched} unmatched: {unmatched}'.format(matched = str(layer_matched.GetFeatureCount()),unmatched = str(layer_unmatched.GetFeatureCount()) )
+    print 'layer1: {layer1} layer2: {layer2} matched: {matched} unmatched: {unmatched}'.format(
+    matched = str(layer_matched.GetFeatureCount()),
+    unmatched = str(layer_unmatched.GetFeatureCount()),
+    layer1 = str(layer1.GetFeatureCount()),
+    layer2 = str(layer2.GetFeatureCount())
+     )
     return layer_matched, layer_unmatched
 
 
@@ -102,11 +114,11 @@ def attrs2polys(points_filename, polygons_filename, result_filename='result.gpkg
     layer2_datasource=layer2_driver.CreateDataSource('memData')
     #open the memory datasource with write access
     tmp=layer2_driver.Open('memData',1)
-    layer2=layer2_datasource.CopyLayer(points_datasource.GetLayer(),'layer2',['OVERWRITE=YES'])
-
+    layer2=layer2_datasource.CopyLayer(polygons_datasource.GetLayer(),'layer2',['OVERWRITE=YES'])
 
 
     join_1pass, unmatched_1pass = spatial_join(layer1,layer2)
+    quit()
 
 
 

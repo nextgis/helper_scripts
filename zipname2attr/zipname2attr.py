@@ -36,7 +36,7 @@ python %(prog)s ../2346.zip
 python %(prog)s --fieldname Ref ../2346.zip
       For each zip in folder:
 find ~/tmp/folder_with_zips/ -name "*.zip" -exec "python %(prog)s --fieldname Ref {}" \;
-for f in ~/tmp/folder_with_zips/*.zip; do python %(prog)s --fieldname Ref $f ; done
+for f in ~/tmp/folder_with_zips/*.zip; do python zipname2attr.py --fieldname Ref $f ; done
 ''' \
         % {'prog': parser.prog}
     return parser
