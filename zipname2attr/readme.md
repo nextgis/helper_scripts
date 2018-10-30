@@ -13,9 +13,14 @@ pip install --user -r requirements.txt
 
 Использование
 -----------------
-На Windows не работает.
+
 Работа с zip-архивом:
 
 ```
 python area_calc.py "c:\temp\folder\zipwithfile.zip"
+```
+
+Обработка всех zip-архивов в каталоге
+```
+find ~/tmp/folder_with_zips/ -name "*.zip" -exec "python %(prog)s --fieldname Ref {}" \;
 ```
