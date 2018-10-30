@@ -17,10 +17,10 @@ cd helper_scripts/zipname2attr
 Работа с zip-архивом:
 
 ```
-python area_calc.py "c:\temp\folder\zipwithfile.zip"
+python zipname2attr.py "c:\temp\folder\zipwithfile.zip"
 ```
 
 Обработка всех zip-архивов в каталоге
 ```
-find ~/tmp/folder_with_zips/ -name "*.zip" -exec "python %(prog)s --fieldname Ref {}" \;
+find ~/tmp/folder_with_zips/ -name "*.zip" -exec "python zipname2attr.py --fieldname Ref {}" \;
 ```
