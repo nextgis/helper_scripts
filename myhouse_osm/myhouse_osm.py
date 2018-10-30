@@ -54,20 +54,24 @@ def spatial_join(layer1, layer2):
         geom2 = feature2.GetGeometryRef()
         for feature1 in layer1:
             if geom2.Intersects(feature1.GetGeometryRef()):
-                outFeature = ogr.Feature(matched_layerdef)
+                #outFeature = ogr.Feature(matched_layerdef)
+                '''
                 outFeature.SetGeometry(feature1)
                 for i in range(feature2.GetFieldCount()):
                     outFeature.CreateField(feature2.GetFieldDefnRef(i))
-                layer_matched.CreateFeature(outFeature)
-                outFeature = None
+                '''
+                layer_matched.CreateFeature(feature1)
+                #outFeature = None
             else:
-                outFeature = ogr.Feature(layer_matched@@@@@)
-                outFeature.SetGeometry(feature1)
+                #outFeature = feature1
+                '''outFeature.SetGeometry(feature1)
                 for i in range(feature2.GetFieldCount()):
                     outFeature.CreateField(feature2.GetFieldDefnRef(i))
-                layer_unmatched.CreateFeature(outFeature)
-                outFeature = None
+                '''
+                layer_unmatched.CreateFeature(feature1)
+                #outFeature = None
 
+    print 'matched: {matched} unmatched: {unmatched}'.format(matched = str(layer_matched.GetFeatureCount()),unmatched = str(layer_unmatched.GetFeatureCount()) )
     return layer_matched, layer_unmatched
 
 
