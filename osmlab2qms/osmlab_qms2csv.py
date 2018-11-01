@@ -219,7 +219,10 @@ def getLayersWMS(url):
     list = url.split("?")[1].split("&")
     params = dict(map(None,x.split('=')) for x in list)
     params = dict((k.upper(), v) for k,v in params.iteritems())
-    layers = params['LAYERS']
+    if 'LAYERS' in params.keys():
+        layers = params['LAYERS']
+    else:
+        layers = None
     
     return layers
 

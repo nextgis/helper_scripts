@@ -17,7 +17,7 @@ else:
     path = ''
 
 #os.chdir('all')
-files = glob.glob('*.7z')
+files = glob.glob('*.zip')
 output = open('result.csv','wb')
 output.write('ID;REG;LAYER;NUM\n')
 

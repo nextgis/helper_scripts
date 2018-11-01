@@ -13,7 +13,7 @@
 #           -h           Show this help message and exit
 #           input        Input shapefile name
 # Examples:
-#      python distance_calc.py --utm_field UTM_zone --id_field ID_1 --output_folder output --input PublicStops_770_SJ.shp
+#      python distance_calc_qgis.py --utm_field UTM_zone --id_field ID_1 --output_folder output --input PublicStops_770_SJ.shp
 #
 # Copyright (C) 2017 Maxim Dubinin (maxim.dubinin@nextgis.ru)
 # Created: 24.11.2017
