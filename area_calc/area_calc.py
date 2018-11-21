@@ -10,7 +10,7 @@ import tempfile, shutil, zipfile
 from geographiclib.geodesic import Geodesic
 from osgeo import ogr, osr, gdal
 
-import tqdm
+from tqdm import tqdm
 
 ogr.UseExceptions()
 
