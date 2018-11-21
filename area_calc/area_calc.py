@@ -10,7 +10,7 @@ import tempfile, shutil, zipfile
 from geographiclib.geodesic import Geodesic
 from osgeo import ogr, osr, gdal
 
-from progress.bar import Bar
+import tqdm
 
 ogr.UseExceptions()
 
@@ -141,9 +141,11 @@ def calc_area_shp(source_filename, output_filename):
         source_crs = layer.GetSpatialRef()
         layer.ResetReading()
         feature = layer.GetNextFeature()
-        bar = Bar('Calculate areas', max=keys_count, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
+        
+        pbar = tqdm(total=keys_count)
+		
         while feature:
-            bar.next()
+            pbar.update(1)
 
             #copy feature to new layer
             outFeature = ogr.Feature(outlayerdef)
@@ -175,7 +177,7 @@ def calc_area_shp(source_filename, output_filename):
 
             feature = layer.GetNextFeature()
         layer.ResetReading()
-        bar.finish()
+        pbar.close()
         dataSource = None
         outdatasource = None
 

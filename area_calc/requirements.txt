@@ -1,2 +1,2 @@
 geographiclib
-progress
+tqdm
