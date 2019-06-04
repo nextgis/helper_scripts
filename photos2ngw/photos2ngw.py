@@ -186,7 +186,7 @@ if __name__ == '__main__':
     iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
     courl = lambda: '%s/api/resource/' % URL
 
-    if resourse_id is None:
+    if args.resourse_id is None:
     	# Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
     	# производится все дальнешние манипуляции.
     	grp = post(courl(), json=dict(
@@ -201,7 +201,7 @@ if __name__ == '__main__':
 		# поместим ее ID в отдельную переменную.
         grpid = grp['id']
     else:
-        grpid = resourse_id
+        grpid = args.resourse_id
     grpref = dict(id=grpid)
 
 
