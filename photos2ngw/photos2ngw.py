@@ -8,8 +8,8 @@ try:
 except ImportError:
 	print "config.py not found. Copy config.example.py to config.py, and set creds here. See readme.md"
 	quit()
-    
-	
+
+
 from fractions import Fraction
 
 
@@ -27,17 +27,17 @@ def progress(count, total, status=''):
 def get_args():
     import argparse
     p = argparse.ArgumentParser(description='Move images to folder with his date')
-    p.add_argument('--resourse_id', help='nextgis.com folder id')
+    p.add_argument('--resourse_id', help='nextgis.com folder id', type=int)
     p.add_argument('path', help='Path to folder containing JPG files')
     return p.parse_args()
-    
+
 def _get_if_exist(data, key):
     if key in data:
         return data[key]
-		
+
     return None
-    
-   
+
+
 
 def _convert_to_degress(value):
     """
@@ -51,7 +51,7 @@ def _convert_to_degress(value):
     s = float(value.values[2].num) / float(value.values[2].den)
 
     return d + (m / 60.0) + (s / 3600.0)
-    
+
 def get_exif_location(exif_data):
     """
     Returns the latitude and longitude, if available, from the provided exif_data (obtained through get_exif_data above)
@@ -74,7 +74,7 @@ def get_exif_location(exif_data):
             lon = 0 - lon
 
     return lat, lon
-    
+
 
 if __name__ == '__main__':
     args = get_args()
@@ -86,13 +86,13 @@ if __name__ == '__main__':
     index = 0
     IterationStep = 1
     total = len(file_list)
-    
+
     geojson = dict()
     geojson['type']='FeatureCollection'
     geojsonFeatures = list()
     while index < total:
         filename = file_list[index]
-		
+
         file = open(filename, 'rb')
         tags = exifread.process_file(file, details=False)
         file.close()
@@ -110,21 +110,21 @@ if __name__ == '__main__':
         geojsonFeature['geometry']=dict()
         geojsonFeature['geometry']['type'] = 'Point'
         geojsonFeature['geometry']['coordinates'] = [lon,lat]
-        
+
 
         if lat is not None and lon is not None :
-            
+
             geojsonFeatures.append(geojsonFeature)
-                
+
         index = index+IterationStep
         if index > total:
             index=total
         progress(index, len(file_list), status='Create geojson with photo locations, total = '+str(total))
-        
-    geojson['features'] = geojsonFeatures
-    
 
-    with open('photos.geojson', 'w') as outfile:  
+    geojson['features'] = geojsonFeatures
+
+
+    with open('photos.geojson', 'w') as outfile:
         json.dump(geojson, outfile)
 
 
@@ -212,9 +212,9 @@ if __name__ == '__main__':
 
     # Проходим по файлам, ищем geojson
 
-    filename = 'photos.geojson'    
+    filename = 'photos.geojson'
     print "uploading "+filename
-            
+
             # Теперь создадим векторный слой из geojson-файла. Для начала нужно загрузить
             # исходный ZIP-архив, поскольку передача файла внутри REST API - что-то
             # странное. Для загрузки файлов предусмотрено отдельное API, которое понимает
@@ -235,13 +235,9 @@ if __name__ == '__main__':
         #Создание стиля
         vectstyle = post(courl(), json=dict(
                 resource=dict(cls='mapserver_style', parent=vectlyr, display_name=os.path.splitext(filename)[0]),
-                mapserver_style=dict(xml='''<map><symbol><type>ellipse</type><name>circle</name><points>1 1</points> 
+                mapserver_style=dict(xml='''<map><symbol><type>ellipse</type><name>circle</name><points>1 1</points>
   <filled>true</filled>  </symbol><layer><class><style><symbol>circle</symbol><color red="255" green="0" blue="189"/>
   <outlinecolor red="255" green="0" blue="0"/></style></class></layer></map>''')
             ))
-			
+
 	os.unlink(filename)
-
-
-
-            
