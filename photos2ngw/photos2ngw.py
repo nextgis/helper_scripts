@@ -3,14 +3,37 @@
 import os, sys
 import exifread
 import json
+import math
 
 try:
     import config
 except ImportError:
     print "config.py not found. Copy config.example.py to config.py, and set creds here. See readme.md"
     quit()
-    
-    
+
+
+
+def lon_3857(lon):
+  r_major=6378137.000
+  return r_major*math.radians(lon)
+
+def lat_3857(lat):
+  if lat>89.5:lat=89.5
+  if lat<-89.5:lat=-89.5
+  r_major=6378137.000
+  r_minor=6356752.3142
+  temp=r_minor/r_major
+  eccent=math.sqrt(1-temp**2)
+  phi=math.radians(lat)
+  sinphi=math.sin(phi)
+  con=eccent*sinphi
+  com=eccent/2
+  con=((1.0-con)/(1.0+con))**com
+  ts=math.tan((math.pi/2-phi)/2)/con
+  y=0-r_major*math.log(ts)
+  return y
+
+
 def get_args():
     import argparse
     p = argparse.ArgumentParser(description='Move images to folder with his date')
@@ -33,10 +56,10 @@ def progress(count, total, status=''):
 def _get_if_exist(data, key):
     if key in data:
         return data[key]
-		
+
     return None
-    
-   
+
+
 
 def _convert_to_degress(value):
     """
@@ -50,7 +73,7 @@ def _convert_to_degress(value):
     s = float(value.values[2].num) / float(value.values[2].den)
 
     return d + (m / 60.0) + (s / 3600.0)
-    
+
 def get_exif_location(exif_data):
     """
     Returns the latitude and longitude, if available, from the provided exif_data (obtained through get_exif_data above)
@@ -73,7 +96,7 @@ def get_exif_location(exif_data):
             lon = 0 - lon
 
     return lat, lon
-    
+
 
 if __name__ == '__main__':
     args = get_args()
@@ -85,46 +108,39 @@ if __name__ == '__main__':
     index = 0
     IterationStep = 1
     total = len(file_list)
-    
-    geojson = dict()
-    geojson['type']='FeatureCollection'
-    geojsonFeatures = list()
+
+    ngwFeatures = list()
     while index < total:
         filename = file_list[index]
-		
+
         file = open(filename, 'rb')
         tags = exifread.process_file(file, details=False)
         file.close()
 
         lat, lon = get_exif_location(tags)
-        geojsonFeature = dict()
-        geojsonFeature['type'] = 'Feature'
-        geojsonFeature['crs'] = dict()
-        geojsonFeature['crs']['type'] = 'name'
-        geojsonFeature['crs']['properties'] = dict()
-        geojsonFeature['crs']['properties']['name'] = "urn:ogc:def:crs:OGC:1.3:CRS84"
-        geojsonFeature['properties'] = dict()
-        geojsonFeature['properties']['filename'] = filename
-        geojsonFeature['properties']['datetime'] = str(_get_if_exist(tags,'Image DateTime'))
-        geojsonFeature['geometry']=dict()
-        geojsonFeature['geometry']['type'] = 'Point'
-        geojsonFeature['geometry']['coordinates'] = [lon,lat]
-        
+        ngwFeature = dict()
+        ngwFeature['extensions'] = dict()
+        ngwFeature['extensions']['attachment'] = None
+        ngwFeature['extensions']['description'] = None
+        ngwFeature['fields'] = dict()
+        ngwFeature['fields']['filename'] = filename
+        ngwFeature['fields']['datetime'] = str(_get_if_exist(tags,'Image DateTime'))
+
+
 
         if lat is not None and lon is not None :
-            
-            geojsonFeatures.append(geojsonFeature)
-                
+
+            ngwFeature['geom'] = 'POINT ({lon} {lat})'.format(lon=lon_3857(lon),lat=lat_3857(lat))
+            ngwFeatures.append(ngwFeature)
+
+
+
         index = index+IterationStep
         if index > total:
             index=total
-        progress(index, len(file_list), status='Create geojson with photo locations, total = '+str(total))
-        
-    geojson['features'] = geojsonFeatures
-    
-    filename = 'photos.geojson'
-    with open('photos.geojson', 'w') as outfile:  
-        json.dump(geojson, outfile)
+        progress(index, len(file_list), status='Read photos, total = '+str(total))
+
+
 
 
     URL = config.ngw_url
@@ -208,41 +224,77 @@ if __name__ == '__main__':
     # только что созданной подгруппы.
     get(iturl(grpid))
 
+    #create empty layer using REST API
 
-    # Проходим по файлам, ищем geojson
-
-        
-    print "uploading "+filename
-            
-            # Теперь создадим векторный слой из geojson-файла. Для начала нужно загрузить
-            # исходный ZIP-архив, поскольку передача файла внутри REST API - что-то
-            # странное. Для загрузки файлов предусмотрено отдельное API, которое понимает
-            # как обычную загрузку из HTML-формы, так загрузку методом PUT. Последнее
-            # несколько короче.
-    with open(filename, 'rb') as fd:
-        shpzip = put(URL + '/api/component/file_upload/upload', data=fd)
-
-
-        srs = dict(id=3857)
-
-
-        vectlyr = post(courl(), json=dict(
-                resource=dict(cls='vector_layer', parent=grpref, display_name=os.path.splitext(filename)[0]),
-                vector_layer=dict(srs=srs, source=shpzip)
-            ))
-
-        #Создание стиля
-        vectstyle = post(courl(), json=dict(
-                resource=dict(cls='mapserver_style', parent=vectlyr, display_name=os.path.splitext(filename)[0]),
-                mapserver_style=dict(xml='''<map><symbol><type>ellipse</type><name>circle</name><points>1 1</points> 
-  <filled>true</filled>  </symbol><layer><class><style><symbol>circle</symbol><color red="255" green="0" blue="189"/>
-  <outlinecolor red="255" green="0" blue="0"/></style></class></layer></map>''')
-            ))
-    outfile.close()
-    fd.close()
-    os.remove(filename) 
+    structure = dict()
+    structure['resource']=dict()
+    structure['resource']['cls']='vector_layer'
+    structure['resource']['parent']=dict(id=int(grpid))
+    structure['resource']['display_name']='photos'
+    structure['vector_layer']=dict()
+    structure['vector_layer']['srs']=dict(id=3857)
+    structure['vector_layer']['geometry_type']='POINT'
+    structure['vector_layer']['fields']=list()
+    structure['vector_layer']['fields'].append(dict(keyname='filename',datatype='STRING'))
+    structure['vector_layer']['fields'].append(dict(keyname='datetime',datatype='STRING'))
+    vectlyr = post(courl(), json=structure)
 
 
 
 
-            
+    for feature in ngwFeatures:
+
+        print 'upload feature'
+
+        #ngw_feature = post(vectlyr['id']+'/feature/', json=feature)
+        post_url = URL + '/api/resource/' + str(vectlyr['id'])+'/feature/'
+        print post_url
+        response = requests.post(post_url, data=json.dumps(feature),auth=AUTH)
+        print response.content
+
+        with open(feature['fields']['filename']) as f:
+
+            #upload attachment to nextgisweb
+            req = requests.put(URL + '/api/'+ '/component/file_upload/upload', data=f, auth=AUTH)
+            json_data = req.json()
+            json_data['name'] = os.path.basename(feature['fields']['filename'])
+
+            attach_data = {}
+            attach_data['file_upload'] = json_data
+
+            #add attachment to nextgisweb feature
+            post_url = URL + '/api/resource/' + str(vectlyr['id']) +'/feature/' + str(response.json()['id'])+ '/attachment/'
+            print post_url
+            req = requests.post(post_url, data=json.dumps(attach_data), auth=AUTH)
+
+
+    #create map mapstyle
+    filename = 'photos.qml'
+
+    with open(filename) as f:
+
+        #upload attachment to nextgisweb
+        req = requests.put(URL + '/api/'+ '/component/file_upload/upload', data=f, auth=AUTH)
+        json_data = req.json()
+        print json_data
+
+        mapstyle_data = {}
+        mapstyle_data['qgis_vector_style'] = {}
+        mapstyle_data['qgis_vector_style']['file_upload'] = {}
+        mapstyle_data['qgis_vector_style']['file_upload']['id'] = json_data['id']
+        mapstyle_data['qgis_vector_style']['file_upload']['mime_type'] = json_data['mime_type']
+        mapstyle_data['qgis_vector_style']['file_upload']['size'] = json_data['size']
+        #mapstyle_data['qgis_vector_style']['file_upload']['name'] = json_data['name']
+        mapstyle_data['resource'] = {}
+        mapstyle_data['resource']['cls'] = 'qgis_vector_style'
+        mapstyle_data['resource']['display_name'] = 'photos'
+        mapstyle_data['resource']['parent'] = {}
+        mapstyle_data['resource']['parent']['id'] = vectlyr['id']
+
+
+
+        #add attachment to nextgisweb feature
+        post_url = URL + '/api/resource/'
+        #print post_url
+        #print mapstyle_data
+        req = requests.post(post_url, data=json.dumps(mapstyle_data), auth=AUTH)
