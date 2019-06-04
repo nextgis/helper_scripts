@@ -27,7 +27,7 @@ def progress(count, total, status=''):
 def get_args():
     import argparse
     p = argparse.ArgumentParser(description='Move images to folder with his date')
-    p.add_argument('--resourse_id', help='nextgis.com folder id')
+    p.add_argument('--resourse_id', help='nextgis.com folder id', type=int)
     p.add_argument('path', help='Path to folder containing JPG files')
     return p.parse_args()
     
@@ -239,7 +239,11 @@ if __name__ == '__main__':
   <filled>true</filled>  </symbol><layer><class><style><symbol>circle</symbol><color red="255" green="0" blue="189"/>
   <outlinecolor red="255" green="0" blue="0"/></style></class></layer></map>''')
             ))
-	
+    outfile.close()
+    fd.close()
+    os.remove(filename) 
 
-	#os.remove(filename) 
-    #почему-то файл где-то не закрывается, хотя всё через with
+
+
+
+            
