@@ -3,6 +3,13 @@
 import os, sys
 import exifread
 import json
+try:
+    import config
+except ImportError:
+	print "config.py not found. Copy config.example.py to config.py, and set creds here. See readme.md"
+	quit()
+    
+	
 from fractions import Fraction
 
 
@@ -121,8 +128,8 @@ if __name__ == '__main__':
         json.dump(geojson, outfile)
 
 
-    URL = 'http://trolleway.nextgis.com'
-    AUTH = ('administrator', '16208ii')
+    URL = config.ngw_url
+    AUTH = config.ngw_creds
     GRPNAME = "photos"
 
     import requests
@@ -179,22 +186,22 @@ if __name__ == '__main__':
     iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
     courl = lambda: '%s/api/resource/' % URL
 
-	if resourse_id is None:
-		# Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
-		# производится все дальнешние манипуляции.
-		grp = post(courl(), json=dict(
-			resource=dict(
-				cls='resource_group',   # Идентификатор типа ресурса
-				parent=dict(id=0),      # Создаем ресурс в основной группе ресурсов
-				display_name=GRPNAME,   # Наименование (или имя) создаваемого ресурса
-			)
-		))
+    if resourse_id is None:
+    	# Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
+    	# производится все дальнешние манипуляции.
+    	grp = post(courl(), json=dict(
+    		resource=dict(
+    			cls='resource_group',   # Идентификатор типа ресурса
+    			parent=dict(id=0),      # Создаем ресурс в основной группе ресурсов
+    			display_name=GRPNAME,   # Наименование (или имя) создаваемого ресурса
+    		)
+    	))
 
 		# Поскольку все дальнейшие манипуляции будут внутри созданной группы,
 		# поместим ее ID в отдельную переменную.
-		grpid = grp['id']
-	else:
-		grpid = resourse_id
+        grpid = grp['id']
+    else:
+        grpid = resourse_id
     grpref = dict(id=grpid)
 
 
