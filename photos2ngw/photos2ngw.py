@@ -3,15 +3,21 @@
 import os, sys
 import exifread
 import json
+
 try:
     import config
 except ImportError:
-	print "config.py not found. Copy config.example.py to config.py, and set creds here. See readme.md"
-	quit()
+    print "config.py not found. Copy config.example.py to config.py, and set creds here. See readme.md"
+    quit()
     
-	
-from fractions import Fraction
-
+    
+def get_args():
+    import argparse
+    p = argparse.ArgumentParser(description='Move images to folder with his date')
+    p.add_argument('--resource_id', help='nextgis.com folder id', type=int)
+    p.add_argument('--debug', '-d', help='debug mode')
+    p.add_argument('path', help='Path to folder containing JPG files')
+    return p.parse_args()
 
 def progress(count, total, status=''):
     bar_len = 60
@@ -24,13 +30,6 @@ def progress(count, total, status=''):
     sys.stdout.flush()  # As suggested by Rom Ruben (see: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/27871113#comment50529068_27871113)
 
 
-def get_args():
-    import argparse
-    p = argparse.ArgumentParser(description='Move images to folder with his date')
-    p.add_argument('--resourse_id', help='nextgis.com folder id', type=int)
-    p.add_argument('path', help='Path to folder containing JPG files')
-    return p.parse_args()
-    
 def _get_if_exist(data, key):
     if key in data:
         return data[key]
@@ -186,7 +185,7 @@ if __name__ == '__main__':
     iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
     courl = lambda: '%s/api/resource/' % URL
 
-    if args.resourse_id is None:
+    if args.resource_id is None:
     	# Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
     	# производится все дальнешние манипуляции.
     	grp = post(courl(), json=dict(
@@ -201,7 +200,7 @@ if __name__ == '__main__':
 		# поместим ее ID в отдельную переменную.
         grpid = grp['id']
     else:
-        grpid = args.resourse_id
+        grpid = args.resource_id
     grpref = dict(id=grpid)
 
 
