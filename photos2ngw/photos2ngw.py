@@ -27,7 +27,7 @@ def progress(count, total, status=''):
 def get_args():
     import argparse
     p = argparse.ArgumentParser(description='Move images to folder with his date')
-    p.add_argument('resourse_id', help='nextgis.com folder id')
+    p.add_argument('--resourse_id', help='nextgis.com folder id')
     p.add_argument('path', help='Path to folder containing JPG files')
     return p.parse_args()
     
