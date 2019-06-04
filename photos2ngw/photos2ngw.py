@@ -242,7 +242,6 @@ if __name__ == '__main__':
     get(iturl(grpid))
 
     #create empty layer using REST API
-
     structure = dict()
     structure['resource']=dict()
     structure['resource']['cls']='vector_layer'
@@ -257,8 +256,7 @@ if __name__ == '__main__':
     vectlyr = post(courl(), json=structure)
 
     for feature in ngwFeatures:
-
-        if args.debug: print 'upload feature'
+        if args.debug: print 'Uploading feature'
 
         #ngw_feature = post(vectlyr['id']+'/feature/', json=feature)
         post_url = URL + '/api/resource/' + str(vectlyr['id'])+'/feature/'
@@ -268,7 +266,7 @@ if __name__ == '__main__':
 
         with open(feature['fields']['filename']) as f:
             #upload attachment to nextgisweb
-            req = requests.put(URL + '/api/'+ '/component/file_upload/upload', data=f, auth=AUTH)
+            req = requests.put(URL + '/api/component/file_upload/upload', data=f, auth=AUTH)
             json_data = req.json()
             json_data['name'] = os.path.basename(feature['fields']['filename'])
 
