@@ -1,17 +1,62 @@
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#******************************************************************************
+#
+# photos2ngw.py
+# ---------------------------------------------------------
+# Upload images to a Web GIS
+# More: https://gitlab.com/nextgis/helper_scripts
+#
+# Usage: 
+#      photos2ngw.py [-h] [-o] [-of ORIGINALS_FOLDER]
+#      where:
+#           -h              show this help message and exit
+#           -o              overwrite
+#           -of             relative path to folder with originals
+#           -t              type of data, license or gin
+# Example:
+#      python photos2ngw.py -of originals_gkm -t gkm
+#
+# Copyright (C) 2019-present Artem Svetlov (artem.svetlov@nextgis.com)
+#
+# This source is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# This code is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# A copy of the GNU General Public License is available on the World Wide Web
+# at <http://www.gnu.org/copyleft/gpl.html>. You can also obtain it by writing
+# to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+#
+#******************************************************************************
 
 import os, sys
 import exifread
 import json
 import math
+import argparse
+import requests
+from json import dumps
+from datetime import datetime
 
 try:
     import config
 except ImportError:
-    print "config.py not found. Copy config.example.py to config.py, and set creds here. See readme.md"
+    print "config.py not found. Copy config.example.py to config.py, and set your Web GIS credentials here. See readme.md"
     quit()
 
-
+def get_args():
+    p = argparse.ArgumentParser(description='Upload images to a Web GIS')
+    p.add_argument('--resource_id', help='nextgis.com folder id', type=int)
+    p.add_argument('--debug', '-d', help='debug mode', action='store_false')
+    p.add_argument('path', help='Path to folder containing JPG files')
+    return p.parse_args()
 
 def lon_3857(lon):
   r_major=6378137.000
@@ -33,15 +78,6 @@ def lat_3857(lat):
   y=0-r_major*math.log(ts)
   return y
 
-
-def get_args():
-    import argparse
-    p = argparse.ArgumentParser(description='Move images to folder with his date')
-    p.add_argument('--resource_id', help='nextgis.com folder id', type=int)
-    p.add_argument('--debug', '-d', help='debug mode')
-    p.add_argument('path', help='Path to folder containing JPG files')
-    return p.parse_args()
-
 def progress(count, total, status=''):
     bar_len = 60
     filled_len = int(round(bar_len * count / float(total)))
@@ -52,14 +88,11 @@ def progress(count, total, status=''):
     sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
     sys.stdout.flush()  # As suggested by Rom Ruben (see: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/27871113#comment50529068_27871113)
 
-
 def _get_if_exist(data, key):
     if key in data:
         return data[key]
 
     return None
-
-
 
 def _convert_to_degress(value):
     """
@@ -97,7 +130,6 @@ def get_exif_location(exif_data):
 
     return lat, lon
 
-
 if __name__ == '__main__':
     args = get_args()
     file_list = []
@@ -126,37 +158,24 @@ if __name__ == '__main__':
         ngwFeature['fields']['filename'] = filename
         ngwFeature['fields']['datetime'] = str(_get_if_exist(tags,'Image DateTime'))
 
-
-
         if lat is not None and lon is not None :
 
             ngwFeature['geom'] = 'POINT ({lon} {lat})'.format(lon=lon_3857(lon),lat=lat_3857(lat))
             ngwFeatures.append(ngwFeature)
-
-
 
         index = index+IterationStep
         if index > total:
             index=total
         progress(index, len(file_list), status='Read photos, total = '+str(total))
 
-
-
-
     URL = config.ngw_url
     AUTH = config.ngw_creds
     GRPNAME = "photos"
-
-    import requests
-    from json import dumps
-    from datetime import datetime
-
 
     # Пока удаление ресурсов не работает, добавим дату и время к имени группы
     GRPNAME = datetime.now().isoformat() + " " + GRPNAME
 
     s = requests.Session()
-
 
     def req(method, url, json=None, **kwargs):
         """ Простейшая обертка над библиотекой requests c выводом отправляемых
@@ -190,35 +209,32 @@ if __name__ == '__main__':
         return jsonresp
 
     # Обертки по именам HTTP запросов, по одной на каждый тип запроса
-
     def get(url, **kwargs): return req('GET', url, **kwargs)            # NOQA
     def post(url, **kwargs): return req('POST', url, **kwargs)          # NOQA
     def put(url, **kwargs): return req('PUT', url, **kwargs)            # NOQA
     def delete(url, **kwargs): return req('DELETE', url, **kwargs)      # NOQA
 
     # Собственно работа с REST API
-
     iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
     courl = lambda: '%s/api/resource/' % URL
 
     if args.resource_id is None:
-    	# Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
-    	# производится все дальнешние манипуляции.
-    	grp = post(courl(), json=dict(
-    		resource=dict(
-    			cls='resource_group',   # Идентификатор типа ресурса
-    			parent=dict(id=0),      # Создаем ресурс в основной группе ресурсов
-    			display_name=GRPNAME,   # Наименование (или имя) создаваемого ресурса
-    		)
-    	))
-
-		# Поскольку все дальнейшие манипуляции будут внутри созданной группы,
-		# поместим ее ID в отдельную переменную.
+        # Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
+        # производится все дальнешние манипуляции.
+        grp = post(courl(), json=dict(
+            resource=dict(
+                cls='resource_group',   # Идентификатор типа ресурса
+                parent=dict(id=0),      # Создаем ресурс в основной группе ресурсов
+                display_name=GRPNAME,   # Наименование (или имя) создаваемого ресурса
+            )
+        ))
+    
+        # Поскольку все дальнейшие манипуляции будут внутри созданной группы,
+        # поместим ее ID в отдельную переменную.
         grpid = grp['id']
     else:
         grpid = args.resource_id
     grpref = dict(id=grpid)
-
 
     # Метод POST возвращает только ID созданного ресурса, посмотрим все данные
     # только что созданной подгруппы.
@@ -238,9 +254,6 @@ if __name__ == '__main__':
     structure['vector_layer']['fields'].append(dict(keyname='filename',datatype='STRING'))
     structure['vector_layer']['fields'].append(dict(keyname='datetime',datatype='STRING'))
     vectlyr = post(courl(), json=structure)
-
-
-
 
     for feature in ngwFeatures:
 
@@ -267,12 +280,10 @@ if __name__ == '__main__':
             print post_url
             req = requests.post(post_url, data=json.dumps(attach_data), auth=AUTH)
 
-
     #create map mapstyle
     filename = 'photos.qml'
 
     with open(filename) as f:
-
         #upload attachment to nextgisweb
         req = requests.put(URL + '/api/'+ '/component/file_upload/upload', data=f, auth=AUTH)
         json_data = req.json()
@@ -290,8 +301,6 @@ if __name__ == '__main__':
         mapstyle_data['resource']['display_name'] = 'photos'
         mapstyle_data['resource']['parent'] = {}
         mapstyle_data['resource']['parent']['id'] = vectlyr['id']
-
-
 
         #add attachment to nextgisweb feature
         post_url = URL + '/api/resource/'

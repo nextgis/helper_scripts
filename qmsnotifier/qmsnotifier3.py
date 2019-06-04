@@ -12,7 +12,7 @@
 #      where:
 #           -h              show this help message and exit
 # Example:
-#      python notifier.py
+#      python qmsnotifier.py
 #
 # Copyright (C) 2017-present Maxim Dubinin (maxim.dubinin@nextgis.com)
 #
