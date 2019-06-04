@@ -54,7 +54,7 @@ except ImportError:
 def get_args():
     p = argparse.ArgumentParser(description='Upload images to a Web GIS')
     p.add_argument('--resource_id', help='nextgis.com folder id', type=int)
-    p.add_argument('--debug', '-d', help='debug mode', action='store_false')
+    p.add_argument('--debug', '-d', help='debug mode', action='store_true')
     p.add_argument('path', help='Path to folder containing JPG files')
     return p.parse_args()
 
@@ -159,7 +159,6 @@ if __name__ == '__main__':
         ngwFeature['fields']['datetime'] = str(_get_if_exist(tags,'Image DateTime'))
 
         if lat is not None and lon is not None :
-
             ngwFeature['geom'] = 'POINT ({lon} {lat})'.format(lon=lon_3857(lon),lat=lat_3857(lat))
             ngwFeatures.append(ngwFeature)
 
@@ -190,21 +189,23 @@ if __name__ == '__main__':
         req = requests.Request(method, url, auth=AUTH, **kwargs)
         preq = req.prepare()
 
-        print ""
-        print ">>> %s %s" % (method, url)
+        if args.debug: print ""
+        if args.debug: print ">>> %s %s" % (method, url)
 
-        if jsonuc:
-            print ">>> %s" % jsonuc
+        if args.debug: 
+            if jsonuc:
+                print ">>> %s" % jsonuc
 
         resp = s.send(preq)
 
-        print resp.status_code
+        if args.debug: print resp.status_code
         assert resp.status_code / 100 == 2
 
         jsonresp = resp.json()
 
-        for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
-            print "<<< %s" % line
+        if args.debug: 
+            for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
+                print "<<< %s" % line
 
         return jsonresp
 
@@ -257,16 +258,15 @@ if __name__ == '__main__':
 
     for feature in ngwFeatures:
 
-        print 'upload feature'
+        if args.debug: print 'upload feature'
 
         #ngw_feature = post(vectlyr['id']+'/feature/', json=feature)
         post_url = URL + '/api/resource/' + str(vectlyr['id'])+'/feature/'
-        print post_url
+        if args.debug: print post_url
         response = requests.post(post_url, data=json.dumps(feature),auth=AUTH)
-        print response.content
+        if args.debug: print response.content
 
         with open(feature['fields']['filename']) as f:
-
             #upload attachment to nextgisweb
             req = requests.put(URL + '/api/'+ '/component/file_upload/upload', data=f, auth=AUTH)
             json_data = req.json()
@@ -277,7 +277,7 @@ if __name__ == '__main__':
 
             #add attachment to nextgisweb feature
             post_url = URL + '/api/resource/' + str(vectlyr['id']) +'/feature/' + str(response.json()['id'])+ '/attachment/'
-            print post_url
+            if args.debug: print post_url
             req = requests.post(post_url, data=json.dumps(attach_data), auth=AUTH)
 
     #create map mapstyle
@@ -287,7 +287,7 @@ if __name__ == '__main__':
         #upload attachment to nextgisweb
         req = requests.put(URL + '/api/'+ '/component/file_upload/upload', data=f, auth=AUTH)
         json_data = req.json()
-        print json_data
+        if args.debug: print json_data
 
         mapstyle_data = {}
         mapstyle_data['qgis_vector_style'] = {}
