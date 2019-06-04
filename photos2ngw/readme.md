@@ -8,7 +8,6 @@ Read folder with photos with GPS tags in EXIF. Create point layer in nextgis.com
 2. copy config.example.py to config.py
 3. Edit config.py and set login and password
 
-
 # Установка
 
 1. git clone
