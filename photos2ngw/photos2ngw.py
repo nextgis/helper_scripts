@@ -160,14 +160,13 @@ if __name__ == '__main__':
         if index > len(file_list):
             index = len(file_list)
         pbar.update(1)
-        
     pbar.close()
     
     URL = config.ngw_url
     AUTH = config.ngw_creds
     GRPNAME = "photos"
 
-    # Пока удаление ресурсов не работает, добавим дату и время к имени группы
+    #Генерация уникального названия группы ресурсов, если нужно создать новую
     GRPNAME = datetime.now().isoformat() + " " + GRPNAME
 
     s = requests.Session()
@@ -211,9 +210,10 @@ if __name__ == '__main__':
     def put(url, **kwargs): return req('PUT', url, **kwargs)            # NOQA
     def delete(url, **kwargs): return req('DELETE', url, **kwargs)      # NOQA
 
-    # Собственно работа с REST API
     iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
     courl = lambda: '%s/api/resource/' % URL
+    
+    # Собственно работа с REST API
 
     if args.resource_id is None:
         # Создаем группу ресурсов внутри основной группы ресурсов, в которой будут
@@ -236,6 +236,15 @@ if __name__ == '__main__':
     # Метод POST возвращает только ID созданного ресурса, посмотрим все данные
     # только что созданной подгруппы.
     get(iturl(grpid))
+    
+    #Проверка, есть ли такой слой
+    req = requests.get(URL + '/api/resource/?parent=' + str(grpid), auth=AUTH)
+    for element in req.json():
+        if element.get("resource").get("cls") == 'vector_layer':  
+            if element.get("resource").get("display_name") == 'photos':
+                print "layer 'photos' alreay exists"
+                quit()
+    
 
     #create empty layer using REST API
     structure = dict()
