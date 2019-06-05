@@ -238,6 +238,7 @@ if __name__ == '__main__':
     get(iturl(grpid))
     
     #Проверка, есть ли такой слой
+    '''
     req = requests.get(URL + '/api/resource/?parent=' + str(grpid), auth=AUTH)
     for element in req.json():
         if element.get("resource").get("cls") == 'vector_layer':  
@@ -245,6 +246,7 @@ if __name__ == '__main__':
                 print "layer 'photos' alreay exists"
                 print URL+'/resource/'+str(element.get("resource").get("id"))
                 quit()
+    '''
     
 
     #create empty layer using REST API
@@ -259,6 +261,7 @@ if __name__ == '__main__':
     structure['vector_layer']['fields']=list()
     structure['vector_layer']['fields'].append(dict(keyname='filename',datatype='STRING'))
     structure['vector_layer']['fields'].append(dict(keyname='datetime',datatype='STRING'))
+    print courl()
     vectlyr = post(courl(), json=structure)
 
     index = 0
