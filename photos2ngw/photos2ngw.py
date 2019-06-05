@@ -243,6 +243,7 @@ if __name__ == '__main__':
         if element.get("resource").get("cls") == 'vector_layer':  
             if element.get("resource").get("display_name") == 'photos':
                 print "layer 'photos' alreay exists"
+                print URL+'/resource/'+str(element.get("resource").get("id"))
                 quit()
     
 
