@@ -44,6 +44,7 @@ import argparse
 import requests
 from json import dumps
 from datetime import datetime
+from tqdm import tqdm
 
 try:
     import config
@@ -77,16 +78,6 @@ def lat_3857(lat):
   ts=math.tan((math.pi/2-phi)/2)/con
   y=0-r_major*math.log(ts)
   return y
-
-def progress(count, total, status=''):
-    bar_len = 60
-    filled_len = int(round(bar_len * count / float(total)))
-
-    percents = round(100.0 * count / float(total), 1)
-    bar = '=' * filled_len + '-' * (bar_len - filled_len)
-
-    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
-    sys.stdout.flush()  # As suggested by Rom Ruben (see: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/27871113#comment50529068_27871113)
 
 def _get_if_exist(data, key):
     if key in data:
@@ -142,7 +133,10 @@ if __name__ == '__main__':
     total = len(file_list)
 
     ngwFeatures = list()
-    while index < total:
+    pbar = tqdm(total = len(file_list))
+    pbar.set_description("Read photos")
+    while index < len(file_list):
+        
         filename = file_list[index]
 
         file = open(filename, 'rb')
@@ -163,10 +157,12 @@ if __name__ == '__main__':
             ngwFeatures.append(ngwFeature)
 
         index = index+IterationStep
-        if index > total:
-            index=total
-        progress(index, len(file_list), status='Read photos, total = '+str(total))
-
+        if index > len(file_list):
+            index = len(file_list)
+        pbar.update(1)
+        
+    pbar.close()
+    
     URL = config.ngw_url
     AUTH = config.ngw_creds
     GRPNAME = "photos"
@@ -256,9 +252,11 @@ if __name__ == '__main__':
     vectlyr = post(courl(), json=structure)
 
     index = 0
+    pbar = tqdm(total = len(file_list))
+    pbar.set_description("Upload photos")
     for feature in ngwFeatures:
-        index = index + 1
-        progress(index, len(file_list), status='Upload photos, total = '+str(total))
+        index = index + 1        
+        pbar.update(1)
         
         if args.debug: print 'Uploading feature'
 
@@ -282,7 +280,8 @@ if __name__ == '__main__':
             post_url = URL + '/api/resource/' + str(vectlyr['id']) +'/feature/' + str(response.json()['id'])+ '/attachment/'
             if args.debug: print post_url
             req = requests.post(post_url, data=json.dumps(attach_data), auth=AUTH)
-
+    pbar.close()
+    
     if args.debug: print 'upload qgis style'
     #create map mapstyle
     filename = 'photos.qml'
