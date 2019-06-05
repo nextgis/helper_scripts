@@ -255,16 +255,21 @@ if __name__ == '__main__':
     structure['vector_layer']['fields'].append(dict(keyname='datetime',datatype='STRING'))
     vectlyr = post(courl(), json=structure)
 
+    index = 0
     for feature in ngwFeatures:
+        index = index + 1
+        progress(index, len(file_list), status='Upload photos, total = '+str(total))
+        
         if args.debug: print 'Uploading feature'
 
-        #ngw_feature = post(vectlyr['id']+'/feature/', json=feature)
         post_url = URL + '/api/resource/' + str(vectlyr['id'])+'/feature/'
         if args.debug: print post_url
         response = requests.post(post_url, data=json.dumps(feature),auth=AUTH)
         if args.debug: print response.content
-
-        with open(feature['fields']['filename']) as f:
+        
+        filepath = os.path.abspath(feature['fields']['filename'])
+        if args.debug: print 'upload file ' + filepath
+        with open(filepath, 'rb') as f:
             #upload attachment to nextgisweb
             req = requests.put(URL + '/api/component/file_upload/upload', data=f, auth=AUTH)
             json_data = req.json()
@@ -278,10 +283,11 @@ if __name__ == '__main__':
             if args.debug: print post_url
             req = requests.post(post_url, data=json.dumps(attach_data), auth=AUTH)
 
+    if args.debug: print 'upload qgis style'
     #create map mapstyle
     filename = 'photos.qml'
 
-    with open(filename) as f:
+    with open(filename,'rb') as f:
         #upload attachment to nextgisweb
         req = requests.put(URL + '/api/'+ '/component/file_upload/upload', data=f, auth=AUTH)
         json_data = req.json()
@@ -293,7 +299,7 @@ if __name__ == '__main__':
         mapstyle_data['qgis_vector_style']['file_upload']['id'] = json_data['id']
         mapstyle_data['qgis_vector_style']['file_upload']['mime_type'] = json_data['mime_type']
         mapstyle_data['qgis_vector_style']['file_upload']['size'] = json_data['size']
-        #mapstyle_data['qgis_vector_style']['file_upload']['name'] = json_data['name']
+
         mapstyle_data['resource'] = {}
         mapstyle_data['resource']['cls'] = 'qgis_vector_style'
         mapstyle_data['resource']['display_name'] = 'photos'
