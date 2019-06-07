@@ -7,7 +7,7 @@
 # Upload images to a Web GIS
 # More: https://gitlab.com/nextgis/helper_scripts
 #
-# Usage: 
+# Usage:
 #      photos2ngw.py [-h] [-o] [-of ORIGINALS_FOLDER]
 #      where:
 #           -h              show this help message and exit
@@ -59,25 +59,15 @@ def get_args():
     p.add_argument('path', help='Path to folder containing JPG files')
     return p.parse_args()
 
-def lon_3857(lon):
-  r_major=6378137.000
-  return r_major*math.radians(lon)
 
-def lat_3857(lat):
-  if lat>89.5:lat=89.5
-  if lat<-89.5:lat=-89.5
-  r_major=6378137.000
-  r_minor=6356752.3142
-  temp=r_minor/r_major
-  eccent=math.sqrt(1-temp**2)
-  phi=math.radians(lat)
-  sinphi=math.sin(phi)
-  con=eccent*sinphi
-  com=eccent/2
-  con=((1.0-con)/(1.0+con))**com
-  ts=math.tan((math.pi/2-phi)/2)/con
-  y=0-r_major*math.log(ts)
-  return y
+earthRadius = 6378137.0
+
+def lon_3857(x):
+    return earthRadius * math.radians(x)
+
+def lat_3857(y):
+    return earthRadius * math.log(math.tan(math.pi / 4 + math.radians(y) / 2))
+
 
 def _get_if_exist(data, key):
     if key in data:
@@ -136,7 +126,7 @@ if __name__ == '__main__':
     pbar = tqdm(total = len(file_list))
     pbar.set_description("Read photos")
     while index < len(file_list):
-        
+
         filename = file_list[index]
 
         file = open(filename, 'rb')
@@ -161,7 +151,7 @@ if __name__ == '__main__':
             index = len(file_list)
         pbar.update(1)
     pbar.close()
-    
+
     URL = config.ngw_url
     AUTH = config.ngw_creds
     GRPNAME = "photos"
@@ -187,7 +177,7 @@ if __name__ == '__main__':
         if args.debug: print ""
         if args.debug: print ">>> %s %s" % (method, url)
 
-        if args.debug: 
+        if args.debug:
             if jsonuc:
                 print ">>> %s" % jsonuc
 
@@ -198,7 +188,7 @@ if __name__ == '__main__':
 
         jsonresp = resp.json()
 
-        if args.debug: 
+        if args.debug:
             for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
                 print "<<< %s" % line
 
@@ -212,7 +202,7 @@ if __name__ == '__main__':
 
     iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
     courl = lambda: '%s/api/resource/' % URL
-    
+
     # Собственно работа с REST API
 
     if args.resource_id is None:
@@ -225,7 +215,7 @@ if __name__ == '__main__':
                 display_name=GRPNAME,   # Наименование (или имя) создаваемого ресурса
             )
         ))
-    
+
         # Поскольку все дальнейшие манипуляции будут внутри созданной группы,
         # поместим ее ID в отдельную переменную.
         grpid = grp['id']
@@ -236,18 +226,18 @@ if __name__ == '__main__':
     # Метод POST возвращает только ID созданного ресурса, посмотрим все данные
     # только что созданной подгруппы.
     get(iturl(grpid))
-    
+
     #Проверка, есть ли такой слой
     '''
     req = requests.get(URL + '/api/resource/?parent=' + str(grpid), auth=AUTH)
     for element in req.json():
-        if element.get("resource").get("cls") == 'vector_layer':  
+        if element.get("resource").get("cls") == 'vector_layer':
             if element.get("resource").get("display_name") == 'photos':
                 print "layer 'photos' alreay exists"
                 print URL+'/resource/'+str(element.get("resource").get("id"))
                 quit()
     '''
-    
+
 
     #create empty layer using REST API
     structure = dict()
@@ -268,16 +258,16 @@ if __name__ == '__main__':
     pbar = tqdm(total = len(file_list))
     pbar.set_description("Upload photos")
     for feature in ngwFeatures:
-        index = index + 1        
+        index = index + 1
         pbar.update(1)
-        
+
         if args.debug: print 'Uploading feature'
 
         post_url = URL + '/api/resource/' + str(vectlyr['id'])+'/feature/'
         if args.debug: print post_url
         response = requests.post(post_url, data=json.dumps(feature),auth=AUTH)
         if args.debug: print response.content
-        
+
         filepath = os.path.abspath(feature['fields']['filename'])
         if args.debug: print 'upload file ' + filepath
         with open(filepath, 'rb') as f:
@@ -294,7 +284,7 @@ if __name__ == '__main__':
             if args.debug: print post_url
             req = requests.post(post_url, data=json.dumps(attach_data), auth=AUTH)
     pbar.close()
-    
+
     if args.debug: print 'upload qgis style'
     #create map mapstyle
     filename = 'photos.qml'
