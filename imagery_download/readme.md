@@ -51,3 +51,47 @@ rm $ref_stage1.tif
 rm $ref_stage2.tif
 
 ```
+
+# Landsat
+
+## Download
+Его можно скачивать бесплатно с Amazon, а Sentinel оттуда - только за деньги.
+
+Есть библиотека на python landsat-util, она же есть на докерхабе. 
+
+https://pythonhosted.org/landsat-util/ 
+
+
+## Unpack
+
+один вариант
+```
+tar -xvzf community_images.tar.gz
+gdal_merge.py  -separate LC81690372014137LGN00_B{4,3,2}.tif -o LC81690372014137LGN00_rgb.tif
+```
+другой вариант
+```
+#!/bin/sh
+
+rm -f ln8
+mkdir ln8
+cd ln8
+for zip in *.tar.gz
+do
+  dirname=`echo $zip | sed 's/\.tar.gz$//'`
+  if mkdir "$dirname"
+  then
+    if cd "$dirname"
+    then
+      tar -xvzf  ../"$zip" --wildcards --no-anchored '*B8.TIF'
+      cd ..
+      # rm -f $zip # Uncomment to delete the original zip file
+    else
+      echo "Could not unpack $zip - cd failed"
+    fi
+  else
+    echo "Could not unpack $zip - mkdir failed"
+  fi
+done
+
+```
