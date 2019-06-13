@@ -3,7 +3,31 @@
 # Sentinel
 
 ## download in python
+Этот скрипт качает sentinel бесплатно (проверено в 2018-06), и сваливает их как zip-архивы
+```
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+from sentinelsat.sentinel import SentinelAPI, read_geojson, geojson_to_wkt
+from datetime import date
+
+# connect to the API
+api = SentinelAPI('login', 'passwords', 'https://scihub.copernicus.eu/dhus')
+
+# download single scene by known product id
+
+
+# search by polygon, time, and Hub query keywords
+footprint = geojson_to_wkt(read_geojson('aoi.geojson'))
+products = api.query(footprint,
+                     date = ('20190302', date(2019, 05, 31)),
+                     platformname = 'Sentinel-2',
+                     cloudcoverpercentage = (0, 30))
+
+# download all results from the search
+api.download_all(products)
+
+```
 ## unpack and crop in bash
 
 ```
