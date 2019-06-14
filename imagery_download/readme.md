@@ -62,6 +62,19 @@ done
 
 ```
 
+## Generate external previews
+
+using parallel
+```
+sudo apt install parallel
+time find . -name "*.tif" | parallel -I% --max-args 1 gdaladdo  -r cubic -ro  --config COMPRESS_OVERVIEW LZW % 
+```
+using loop
+
+```
+for scene in *.tif;do gdaladdo  -r cubic -ro  --config COMPRESS_OVERVIEW LZW $scene.tif;done
+```
+
 # Landsat
 
 ## Download
