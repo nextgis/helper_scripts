@@ -127,4 +127,13 @@ echo "http://landsat-pds.s3.amazonaws.com/c1/L8/125/025/LC08_L1TP_125025_2019040
 echo "http://landsat-pds.s3.amazonaws.com/c1/L8/125/025/LC08_L1TP_125025_20190409_20190422_01_T1/LC08_L1TP_125025_20190409_20190422_01_T1_B4.TIF" >> url.list
 echo "http://landsat-pds.s3.amazonaws.com/c1/L8/125/025/LC08_L1TP_125025_20190409_20190422_01_T1/LC08_L1TP_125025_20190409_20190422_01_T1_B8.TIF" >> url.list
 cat url.list | parallel -I% -j 8 wget  %
+
+#see http://gis-lab.info/qa/landsat-tiles.html
+
+BASE=LC08_L1TP_125025_20190409_20190422_01_T1
+gdal_landsat_pansharp -pan ${BASE}_B8.TIF -ndv 0 -o ${BASE}_pan.tif \
+ -rgb ${BASE}_B4.TIF -rgb ${BASE}_B3.TIF -rgb ${BASE}_B2.TIF \
+ -lum ${BASE}_B3.TIF 0.5 -lum ${BASE}_B4.TIF 0.5
+
+gdaladdo  -r cubic -ro --config COMPRESS_OVERVIEW LZW ${BASE}_pan.tif
 ```
