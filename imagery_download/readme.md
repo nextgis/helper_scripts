@@ -52,7 +52,8 @@ do
 
   #обрезка по полигону
   gdalwarp -dstalpha -overwrite -co COMPRESS=LZW -cutline $cutlinepath -crop_to_cutline $scene-stage2.tif $scene.tif
-
+  
+  gdaladdo -r cubic -ro  --config COMPRESS_OVERVIEW LZW $scene.tif
   rm $scene-stage1.tif
   rm $scene-stage2.tif
   echo ''
