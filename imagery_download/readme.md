@@ -118,3 +118,13 @@ do
 done
 
 ```
+
+## Landsat-8 simple download and panshaprering
+```
+touch url.list
+echo "http://landsat-pds.s3.amazonaws.com/c1/L8/125/025/LC08_L1TP_125025_20190409_20190422_01_T1/LC08_L1TP_125025_20190409_20190422_01_T1_B2.TIF" >> url.list
+echo "http://landsat-pds.s3.amazonaws.com/c1/L8/125/025/LC08_L1TP_125025_20190409_20190422_01_T1/LC08_L1TP_125025_20190409_20190422_01_T1_B3.TIF" >> url.list
+echo "http://landsat-pds.s3.amazonaws.com/c1/L8/125/025/LC08_L1TP_125025_20190409_20190422_01_T1/LC08_L1TP_125025_20190409_20190422_01_T1_B4.TIF" >> url.list
+echo "http://landsat-pds.s3.amazonaws.com/c1/L8/125/025/LC08_L1TP_125025_20190409_20190422_01_T1/LC08_L1TP_125025_20190409_20190422_01_T1_B8.TIF" >> url.list
+cat url.list | parallel -I% -j 8 wget  %
+```
