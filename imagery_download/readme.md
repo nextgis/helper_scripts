@@ -122,14 +122,14 @@ done
 ## Landsat-8 simple download and panshaprering
 ```
 
-BASE=LC08_L1TP_125025_20190409_20190422_01_T1
-PATH=126
-ROW=025
+ID=LC08_L1TP_125025_20190409_20190422_01_T1
+LN8_PATH=126
+LN8_ROW=025
 touch url.list
-echo "http://landsat-pds.s3.amazonaws.com/c1/L8/${PATH}/${ROW}/${BASE}/${BASE}_B2.TIF" >> url.list
-echo "http://landsat-pds.s3.amazonaws.com/c1/L8/${PATH}/${ROW}/${BASE}/${BASE}_B3.TIF" >> url.list
-echo "http://landsat-pds.s3.amazonaws.com/c1/L8/${PATH}/${ROW}/${BASE}/${BASE}_B4.TIF" >> url.list
-echo "http://landsat-pds.s3.amazonaws.com/c1/L8/${PATH}/${ROW}/${BASE}/${BASE}_B8.TIF" >> url.list
+echo "http://landsat-pds.s3.amazonaws.com/c1/L8/${LN8_PATH}/${LN8_ROW}/${BASE}/${BASE}_B2.TIF" >> url.list
+echo "http://landsat-pds.s3.amazonaws.com/c1/L8/${LN8_PATH}/${LN8_ROW}/${BASE}/${BASE}_B3.TIF" >> url.list
+echo "http://landsat-pds.s3.amazonaws.com/c1/L8/${LN8_PATH}/${LN8_ROW}/${BASE}/${BASE}_B4.TIF" >> url.list
+echo "http://landsat-pds.s3.amazonaws.com/c1/L8/${LN8_PATH}/${LN8_ROW}/${BASE}/${BASE}_B8.TIF" >> url.list
 cat url.list | parallel -I% -j 8 wget  %
 
 #see http://gis-lab.info/qa/landsat-tiles.html
