@@ -119,10 +119,10 @@ done
 
 ```
 
-## Landsat-8 simple download and panshaprering
+## Landsat-8 bash download and panshaprering
 ```
 
-ID=LC08_L1TP_125025_20190409_20190422_01_T1
+BASE=LC08_L1TP_125025_20190409_20190422_01_T1
 LN8_PATH=126
 LN8_ROW=025
 touch url.list
