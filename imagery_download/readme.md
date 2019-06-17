@@ -2,7 +2,7 @@
 
 # Sentinel
 
-## download in python
+## Download Sentinel-2 in python
 Этот скрипт качает sentinel бесплатно (проверено в 2018-06), и сваливает их как zip-архивы
 ```
 #!/usr/bin/env python
@@ -28,7 +28,7 @@ products = api.query(footprint,
 api.download_all(products)
 
 ```
-## unpack and crop in bash
+## Unpack Sentinel-2 scenes and crop by polygon in bash
 
 открывает почему-то не все сцены
 ```
@@ -62,7 +62,7 @@ done
 
 ```
 
-## Generate external previews
+## Generate external previews for imagery
 
 using parallel
 ```
@@ -77,7 +77,7 @@ for scene in *.tif;do gdaladdo  -r cubic -ro  --config COMPRESS_OVERVIEW LZW $sc
 
 # Landsat
 
-## Download
+## Download Landsat-8
 Его можно скачивать бесплатно с Amazon, а Sentinel оттуда - только за деньги.
 
 Есть библиотека на python landsat-util, она же есть на докерхабе. 
@@ -85,7 +85,7 @@ for scene in *.tif;do gdaladdo  -r cubic -ro  --config COMPRESS_OVERVIEW LZW $sc
 https://pythonhosted.org/landsat-util/ 
 
 
-## Unpack
+## Unpack Landsat-8 scenes
 
 один вариант
 ```
