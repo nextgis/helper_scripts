@@ -138,4 +138,9 @@ gdal_landsat_pansharp -pan ${BASE}_B8.TIF -ndv 0 -o ${BASE}_pan.tif \
  -lum ${BASE}_B3.TIF 0.5 -lum ${BASE}_B4.TIF 0.5
 
 gdaladdo  -r cubic -ro --config COMPRESS_OVERVIEW LZW ${BASE}_pan.tif
+
+rm ${BASE}_B2.TIF
+rm ${BASE}_B3.TIF
+rm ${BASE}_B4.TIF
+rm ${BASE}_B8.TIF
 ```
