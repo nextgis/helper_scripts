@@ -1,4 +1,11 @@
+'''
+virtualenv venv
+source venv/bin/activate
 
+pip install -U pip
+pip install rio-color
+
+'''
 import os
 import tempfile
 
