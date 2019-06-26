@@ -112,9 +112,17 @@ def get_exif_location(exif_data):
     return lat, lon
 
 if __name__ == '__main__':
+    import sys
+    
     args = get_args()
     file_list = []
-    for root, sub_folders, files in os.walk(args.path):
+    repaired_path = args.path
+    repaired_path =  repaired_path.decode(sys.getfilesystemencoding()) #magic
+    
+    if repaired_path.endswith('/') or repaired_path.endswith('\\') or repaired_path.endswith('"'): 
+        repaired_path = repaired_path[:-1]
+        
+    for root, sub_folders, files in os.walk(repaired_path):
         for name in files:
             file_list += [os.path.join(root, name)  ]
 
@@ -125,6 +133,8 @@ if __name__ == '__main__':
     ngwFeatures = list()
     pbar = tqdm(total = len(file_list))
     pbar.set_description("Read photos")
+  
+       
     while index < len(file_list):
 
         filename = file_list[index]
