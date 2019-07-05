@@ -91,6 +91,7 @@ class Replicator():
     def dump_rest_prepare(self,source_dump):
         #take ngw vector layer dump (list)
         #delete attachment and id fields
+        #this list can be used in POST/PATCH query, and using for compare features
 
 
         dump = list()
@@ -160,6 +161,60 @@ class Replicator():
             return False
         else:
             return True
+    def is_layers_features_equal(self, primary_ngw_url, primary_ngw_layer_id, primary_ngw_creds, secondary_ngw_url, secondary_ngw_layer_id, secondary_ngw_creds):
+        primary_layer_dump = self.get_ngw_layer_dump(ngw_url=primary_ngw_url, layer_id = primary_ngw_layer_id, ngw_creds = primary_ngw_creds)
+        secondary_layer_dump = self.get_ngw_layer_dump(ngw_url=secondary_ngw_url, layer_id = secondary_ngw_layer_id, ngw_creds = secondary_ngw_creds)
+
+        primary_dump_shaved = self.dump_rest_prepare(primary_layer_dump)
+        secondary_dump_shaved = self.dump_rest_prepare(secondary_layer_dump)
+
+
+        return primary_dump_shaved == secondary_dump_shaved
+        #да, такой способ репликации, при котором все фичи грохаются и грузятся сразу все, позволяет сравнивать слои вот таким образом.
+        #в худшем случае могут быть ложно-положительные срабатывания, но эт ничего
+
+
+    def is_layers_featurecount_equal(self, primary_ngw_url, primary_layer_id, primary_ngw_creds, secondary_ngw_url, secondary_layer_id, secondary_ngw_creds):
+        #return true if both layers have same features count
+        try:
+            url = primary_ngw_url + '/api/resource/' +  str(primary_layer_id) + '/feature_count'
+            if self.debug:
+                print url
+            req = requests.get(url,  auth=primary_ngw_creds)
+            req.raise_for_status()
+
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            print e
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            sys.exit(1)
+
+        primary_layer_json = req.json()
+        cnt1 = int(primary_layer_json['total_count'])
+
+        try:
+            url = secondary_ngw_url + '/api/resource/' +  str(secondary_layer_id) + '/feature_count'
+            if self.debug:
+                print url
+            req = requests.get(url,  auth=secondary_ngw_creds)
+            req.raise_for_status()
+
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            print e
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            sys.exit(1)
+
+        secondary_layer_json = req.json()
+        cnt2 = int(secondary_layer_json['total_count'])
+
+
+        if cnt1 == cnt2:
+            return True
+        else:
+            return False
 
     def replicate_attachments(self, primary_ngw_url, primary_layer_id, primary_ngw_creds, secondary_ngw_url, secondary_layer_id, secondary_ngw_creds, dump):
 
@@ -238,6 +293,14 @@ class Replicator():
 
 
 replicator = Replicator()
+
+feature_count_equal = replicator.is_layers_featurecount_equal(primary_ngw_url=config.primary_ngw_url, primary_layer_id = config.primary_ngw_layer_id, primary_ngw_creds = config.primary_ngw_creds,
+secondary_ngw_url=config.secondary_ngw_url, secondary_layer_id = config.secondary_ngw_layer_id, secondary_ngw_creds = config.secondary_ngw_creds)
+
+if feature_count_equal:
+    all_features_equal = replicator.is_layers_features_equal(primary_ngw_url=config.primary_ngw_url, primary_ngw_layer_id = config.primary_ngw_layer_id, primary_ngw_creds = config.primary_ngw_creds,
+    secondary_ngw_url=config.secondary_ngw_url, secondary_ngw_layer_id = config.secondary_ngw_layer_id, secondary_ngw_creds = config.secondary_ngw_creds)
+    
 
 #Check if both layers has same fields
 replicator.check_layers_has_same_structure()
