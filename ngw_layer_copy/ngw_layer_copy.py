@@ -43,17 +43,25 @@ import requests
 
 
 def get_args():
-    p = argparse.ArgumentParser(description='Upload images to a Web GIS')
-    p.add_argument('--src_url', help='nextgis.com folder id', type=str)
-    p.add_argument('--src_layer', help='nextgis.com folder id', type=int)
-    p.add_argument('--src_login', help='nextgis.com folder id', type=str)
-    p.add_argument('--src_password', help='nextgis.com folder id', type=str)
-    p.add_argument('--dst_url', help='nextgis.com folder id', type=str)
-    p.add_argument('--dst_login', help='nextgis.com folder id', type=str)
-    p.add_argument('--dst_password', help='nextgis.com folder id', type=str)
-    p.add_argument('--dst_group', help='nextgis.com folder id', type=int)
+    epilog = '''
+    Dublicate structure of vector layer in ngw. Uses REST API query api/resource/
+    This is a script intended for manual run before start ngw_replication, for full copy of layer sctucture, witch cannot be copied using geojson/shp.
 
-    p.add_argument('--debug', '-d', help='debug mode', action='store_true')
+    python ngw_layer_copy.py \
+    --src_url http://dev.nextgis.com/sandbox/ --src_layer 1101 --src_login administrator --src_password demodemo \
+    --dst_url http://dev.nextgis.com/sandbox/ --dst_gropup 1100 --dst_login administrator --dst_password demodemo
+    '''
+    p = argparse.ArgumentParser(description='Dublicate structure of vector layer in ngw', epilog = epilog)
+    p.add_argument('--src_url', help='nextgis.com folder id', type=str, required=True)
+    p.add_argument('--src_layer', help='nextgis.com folder id', type=int, required=True)
+    p.add_argument('--src_login', help='nextgis.com folder id', type=str, required=True)
+    p.add_argument('--src_password', help='nextgis.com folder id', type=str, required=True)
+    p.add_argument('--dst_url', help='nextgis.com folder id', type=str, required=True)
+    p.add_argument('--dst_login', help='nextgis.com folder id', type=str, required=True)
+    p.add_argument('--dst_password', help='nextgis.com folder id', type=str, required=True)
+    p.add_argument('--dst_group', help='nextgis.com folder id', type=int, required=True)
+
+
 
     return p.parse_args()
 
