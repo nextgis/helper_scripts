@@ -40,6 +40,7 @@ import os, sys
 import requests
 import json
 import urllib2
+from copy import deepcopy
 from contextlib import closing
 
 try:
@@ -165,14 +166,61 @@ class Replicator():
         primary_layer_dump = self.get_ngw_layer_dump(ngw_url=primary_ngw_url, layer_id = primary_ngw_layer_id, ngw_creds = primary_ngw_creds)
         secondary_layer_dump = self.get_ngw_layer_dump(ngw_url=secondary_ngw_url, layer_id = secondary_ngw_layer_id, ngw_creds = secondary_ngw_creds)
 
-        primary_dump_shaved = self.dump_rest_prepare(primary_layer_dump)
-        secondary_dump_shaved = self.dump_rest_prepare(secondary_layer_dump)
+        cp1=deepcopy(primary_layer_dump)
+        cp2=deepcopy(secondary_layer_dump)
+        primary_dump_shaved = self.dump_rest_prepare(cp1)
+        secondary_dump_shaved = self.dump_rest_prepare(cp2)
 
 
-        return primary_dump_shaved == secondary_dump_shaved
+        equal = primary_dump_shaved == secondary_dump_shaved
         #да, такой способ репликации, при котором все фичи грохаются и грузятся сразу все, позволяет сравнивать слои вот таким образом.
         #в худшем случае могут быть ложно-положительные срабатывания, но эт ничего
 
+        primary_layer_dump = self.get_ngw_layer_dump(ngw_url=primary_ngw_url, layer_id = primary_ngw_layer_id, ngw_creds = primary_ngw_creds)
+        secondary_layer_dump = self.get_ngw_layer_dump(ngw_url=secondary_ngw_url, layer_id = secondary_ngw_layer_id, ngw_creds = secondary_ngw_creds)
+
+        if equal:
+            atachments_equal = self.is_atachments_equal(deepcopy(primary_layer_dump),deepcopy(secondary_layer_dump))
+            if atachments_equal == False:
+                return False
+            else:
+                return True
+
+    def is_atachments_equal(self,primary_layer_dump,secondary_layer_dump):
+        #take two full layer dumps
+        #assume that both dumps have same features count (already checked before)
+        #return true when attachments have same size and filename
+
+        if self.debug: print 'check is_atachments_equal'
+        i = 0
+        cnt = len(primary_layer_dump)
+        for feature in primary_layer_dump:
+
+            primary_attachments = primary_layer_dump[i]['extensions']['attachment']
+            secondary_attachments = secondary_layer_dump[i]['extensions']['attachment']
+            if (primary_attachments is None and secondary_attachments is None): #both features without attachments
+                i=i+1
+                continue
+            if (primary_attachments is None and secondary_attachments is not None): #one layer have attachments, other not have
+                return False
+            if (primary_attachments is not None and secondary_attachments is None): #one layer have attachments, other not have
+                return False
+            if len(primary_attachments) != len(secondary_attachments):
+                if self.debug: print 'feature {id} unmatch attachments count'.format(id=primary_layer_dump[i]['id'])
+                return False
+
+            #if attachment has deleted and changed to other file
+            attachment_number = 0
+            while attachment_number < len(primary_attachments):
+                if primary_attachments[attachment_number]['name'] != secondary_attachments[attachment_number]['name']: return False
+                if primary_attachments[attachment_number]['size'] != secondary_attachments[attachment_number]['size']: return False
+                if primary_attachments[attachment_number]['mime_type'] != secondary_attachments[attachment_number]['mime_type']: return False
+                if primary_attachments[attachment_number]['description'] != secondary_attachments[attachment_number]['description']: return False
+                attachment_number = attachment_number + 1
+
+            i=i+1
+
+        return True
 
     def is_layers_featurecount_equal(self, primary_ngw_url, primary_layer_id, primary_ngw_creds, secondary_ngw_url, secondary_layer_id, secondary_ngw_creds):
         #return true if both layers have same features count
@@ -300,7 +348,8 @@ secondary_ngw_url=config.secondary_ngw_url, secondary_layer_id = config.secondar
 if feature_count_equal:
     all_features_equal = replicator.is_layers_features_equal(primary_ngw_url=config.primary_ngw_url, primary_ngw_layer_id = config.primary_ngw_layer_id, primary_ngw_creds = config.primary_ngw_creds,
     secondary_ngw_url=config.secondary_ngw_url, secondary_ngw_layer_id = config.secondary_ngw_layer_id, secondary_ngw_creds = config.secondary_ngw_creds)
-    
+    if all_features_equal:
+        quit('all features equal')
 
 #Check if both layers has same fields
 replicator.check_layers_has_same_structure()

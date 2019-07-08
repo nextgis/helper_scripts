@@ -6,7 +6,7 @@
 Create test layer
 ```
 #Create empty vector layer
-curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"vector_layer", "parent":{ "id":0 }, "display_name":"NGW replication testing - master layer", "keyname":null, "description":"Testing ngw_replication" }, "resmeta":{ "items":{ } }, "vector_layer":{ "srs":{ "id":3857 }, "geometry_type": "POINT", "fields": [ { "keyname": "Name", "datatype": "STRING" } ] } } ' http://dev.nextgis.com/sandbox/api/resource/
+curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"vector_layer", "parent":{ "id":0 }, "display_name":"NGW replication testing - master layer", "keyname":null, "description":"Testing ngw_replication" }, "resmeta":{ "items":{ } }, "vector_layer":{ "srs":{ "id":3857 }, "geometry_type": "POINT", "fields": [ { "keyname": "Name", "datatype": "STRING" },{ "keyname": "Number", "datatype": "INTEGER" } ] } } ' http://dev.nextgis.com/sandbox/api/resource/
 
 #look id of new layer in response
 .resource.id
