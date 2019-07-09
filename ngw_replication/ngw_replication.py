@@ -43,7 +43,7 @@ import urllib2
 import argparse
 from copy import deepcopy
 from contextlib import closing
-
+import datetime
 
 
 def get_args():
@@ -270,9 +270,29 @@ class Replicator():
         else:
             return False
 
+    def add_metadata(self, ngw_url, layer_id, ngw_creds,key,value):
+        payload = dict()
+        payload['resmeta'] = dict()
+        payload['resmeta']['items'] = dict()
+        payload['resmeta']['items'][key] = value
+
+        url = ngw_url + '/api/' + '/resource/' + layer_id
+        #more smart requests call for easer debug
+        req = requests.Request('PUT',url ,data=json.dumps(payload), auth=ngw_creds)
+        prepared = req.prepare()
+        def pretty_print_query(req):
+            print('\n{}\n{}\n{}\n\n{}'.format(
+                '-----------REQUEST-----------',
+                req.method + ' ' + req.url,
+                '\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
+                req.body,
+            ))
+
+        pretty_print_query(prepared)
+        s = requests.Session()
+        s.send(prepared)
+
     def replicate_attachments(self, primary_ngw_url, primary_layer_id, primary_ngw_creds, secondary_ngw_url, secondary_layer_id, secondary_ngw_creds, dump):
-
-
         features_count = len(dump)
         dump_secondary = self.get_ngw_layer_dump(ngw_url = secondary_ngw_url,layer_id = secondary_layer_id,ngw_creds = secondary_ngw_creds)
         i=0
@@ -348,14 +368,24 @@ class Replicator():
 
 replicator = Replicator()
 
+# ------ check if anything different in layers -----------
+feature_count_equal = False
+all_features_equal = False
+
 feature_count_equal = replicator.is_layers_featurecount_equal(primary_ngw_url=config.primary_ngw_url, primary_layer_id = config.primary_ngw_layer_id, primary_ngw_creds = config.primary_ngw_creds,
 secondary_ngw_url=config.secondary_ngw_url, secondary_layer_id = config.secondary_ngw_layer_id, secondary_ngw_creds = config.secondary_ngw_creds)
 
 if feature_count_equal:
     all_features_equal = replicator.is_layers_features_equal(primary_ngw_url=config.primary_ngw_url, primary_ngw_layer_id = config.primary_ngw_layer_id, primary_ngw_creds = config.primary_ngw_creds,
     secondary_ngw_url=config.secondary_ngw_url, secondary_ngw_layer_id = config.secondary_ngw_layer_id, secondary_ngw_creds = config.secondary_ngw_creds)
-    if all_features_equal:
-        quit('all features equal')
+
+#print update time in metadata, for control
+result = replicator.add_metadata(ngw_url=config.secondary_ngw_url, layer_id = config.secondary_ngw_layer_id, ngw_creds = config.secondary_ngw_creds,key='CHECKED_AT',value=str(datetime.datetime.now()))
+if all_features_equal:
+    quit('all features equal')
+# ------ check if anything different in layers -----------
+
+
 
 #Check if both layers has same fields
 replicator.check_layers_has_same_structure()
@@ -383,3 +413,6 @@ primary_layer_dump = replicator.get_ngw_layer_dump(ngw_url=config.primary_ngw_ur
 #Upload attachments
 result = replicator.replicate_attachments(primary_ngw_url=config.primary_ngw_url, primary_layer_id = config.primary_ngw_layer_id, primary_ngw_creds = config.primary_ngw_creds,
 secondary_ngw_url=config.secondary_ngw_url, secondary_layer_id = config.secondary_ngw_layer_id, secondary_ngw_creds = config.secondary_ngw_creds, dump = primary_layer_dump)
+
+#print update time in metadata, for control
+result = replicator.add_metadata(ngw_url=config.secondary_ngw_url, layer_id = config.secondary_ngw_layer_id, ngw_creds = config.secondary_ngw_creds,key='UPDATED_AT',value=str(datetime.datetime.now()))
