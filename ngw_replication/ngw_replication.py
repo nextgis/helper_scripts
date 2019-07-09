@@ -47,7 +47,7 @@ import datetime
 
 
 def get_args():
-    p = argparse.ArgumentParser(description="Replicate vector layer from ngw to other ngw")
+    p = argparse.ArgumentParser(description="Replicate vector layer from ngw to other ngw", epilog='This script erases metadata of layer')
     p.add_argument('--debug', '-d', help='debug mode', action='store_true')
     p.add_argument('--config', help='patch to config.py file', default='config.py')
     return p.parse_args()
