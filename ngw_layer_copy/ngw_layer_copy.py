@@ -2,20 +2,11 @@
 # -*- coding: utf-8 -*-
 #******************************************************************************
 #
-# photos2ngw.py
+# ngw_layer_copy.py
 # ---------------------------------------------------------
-# Upload images to a Web GIS
+# Dublicate structure of vector layer in ngw Web GIS
 # More: https://gitlab.com/nextgis/helper_scripts
 #
-# Usage:
-#      photos2ngw.py [-h] [-o] [-of ORIGINALS_FOLDER]
-#      where:
-#           -h              show this help message and exit
-#           -o              overwrite
-#           -of             relative path to folder with originals
-#           -t              type of data, license or gin
-# Example:
-#      python photos2ngw.py -of originals_gkm -t gkm
 #
 # Copyright (C) 2019-present Artem Svetlov (artem.svetlov@nextgis.com)
 #
