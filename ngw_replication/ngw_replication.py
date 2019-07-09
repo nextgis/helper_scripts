@@ -40,21 +40,27 @@ import os, sys
 import requests
 import json
 import urllib2
+import argparse
 from copy import deepcopy
 from contextlib import closing
 
-try:
-    import config
-except ImportError:
-    print "config.py not found. Copy config.example.py to config.py, and set your Web GIS credentials here. See readme.md"
-    quit()
+
 
 def get_args():
     p = argparse.ArgumentParser(description="Replicate vector layer from ngw to other ngw")
     p.add_argument('--debug', '-d', help='debug mode', action='store_true')
+    p.add_argument('--config', help='patch to config.py file', default='config.py')
     return p.parse_args()
 
+args = get_args()
+try:
+    import imp
+    config = imp.load_source('config', args.config)
 
+except:
+    path = os.path.abspath(args.config)
+    print "config.py not found at {path} Copy config.example.py to config.py, and set your Web GIS credentials here. See readme.md".format(path=path)
+    quit()
 
 '''
 Simple master-slave replication
