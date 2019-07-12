@@ -73,17 +73,6 @@ args = get_args()
 
 class Config():
     #same interface like "import config"
-    '''
-    primary_ngw_url = ''
-    primary_ngw_layer = ''
-    primary_ngw_login = ''
-    primary_ngw_password = ''
-
-    secondary_ngw_url = ''
-    secondary_ngw_layer = ''
-    secondary_ngw_login = ''
-    secondary_ngw_password = ''
-    '''
 
     def __init__(self,url1,layer1,login1,pass1,url2,layer2,login2,password2):
         self.primary_ngw_url = url1
