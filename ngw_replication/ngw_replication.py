@@ -47,12 +47,64 @@ import datetime
 
 
 def get_args():
-    p = argparse.ArgumentParser(description="Replicate vector layer from ngw to other ngw", epilog='This script erases metadata of layer')
+    epilog = '''Sample: '''
+    epilog +=  '''
+    python ngw_replication.py -url1 "http://dev.nextgis.com/sandbox" -layer1 247 -login1 administrator -pass1 demodemo -url2 "http://dev.nextgis.com/sandbox" -layer2 491 -login2 administrator -pass2 demodemo '''
+    epilog +=  '''
+    This script erases metadata of layer'''
+    p = argparse.ArgumentParser(description="Replicate vector layer from ngw to other ngw", epilog=epilog)
+
+    p.add_argument('--primary_ngw_url','-url1',required=True)
+    p.add_argument('--primary_ngw_layer','-layer1',required=True)
+    p.add_argument('--primary_ngw_login','-login1',required=True)
+    p.add_argument('--primary_ngw_password','-pass1',required=True)
+
+    p.add_argument('--secondary_ngw_url','-url2',required=True)
+    p.add_argument('--secondary_ngw_layer','-layer2',required=True)
+    p.add_argument('--secondary_ngw_login','-login2',required=True)
+    p.add_argument('--secondary_ngw_password','-pass2',required=True)
+
     p.add_argument('--debug', '-d', help='debug mode', action='store_true')
-    p.add_argument('--config', help='patch to config.py file', default='config.py')
+    #p.add_argument('--config', help='patch to config.py file',required=False)
     return p.parse_args()
 
+# --------------- config read ---------------
 args = get_args()
+
+class Config():
+    #same interface like "import config"
+    '''
+    primary_ngw_url = ''
+    primary_ngw_layer = ''
+    primary_ngw_login = ''
+    primary_ngw_password = ''
+
+    secondary_ngw_url = ''
+    secondary_ngw_layer = ''
+    secondary_ngw_login = ''
+    secondary_ngw_password = ''
+    '''
+
+    def __init__(self,url1,layer1,login1,pass1,url2,layer2,login2,password2):
+        self.primary_ngw_url = url1
+        self.primary_ngw_layer_id = layer1
+        self.primary_ngw_creds = (login1,pass1)
+        #self.primary_ngw_password = pass1
+
+        self.secondary_ngw_url = url2
+        self.secondary_ngw_layer_id = layer2
+        self.secondary_ngw_creds = (login2,password2)
+        #self.secondary_ngw_password = password2
+
+
+
+
+
+config = Config(args.primary_ngw_url,args.primary_ngw_layer,args.primary_ngw_login,args.primary_ngw_password,args.secondary_ngw_url,args.secondary_ngw_layer, args.secondary_ngw_login,args.secondary_ngw_password)
+
+
+'''
+# import config from program argument
 try:
     import imp
     config = imp.load_source('config', args.config)
@@ -61,6 +113,8 @@ except:
     path = os.path.abspath(args.config)
     print "config.py not found at {path} Copy config.example.py to config.py, and set your Web GIS credentials here. See readme.md".format(path=path)
     quit()
+'''
+
 
 '''
 Simple master-slave replication
@@ -70,7 +124,7 @@ Layers should have same fields
 
 class Replicator():
 
-    debug = True
+    debug = False
 
     def check_layers_has_same_structure(self):
 
@@ -138,8 +192,8 @@ class Replicator():
                         '\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
                         req.body,
                     ))
-
-                pretty_print_query(prepared)
+                if self.debug:
+                    pretty_print_query(prepared)
                 s = requests.Session()
                 s.send(prepared)
 
@@ -287,8 +341,8 @@ class Replicator():
                 '\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
                 req.body,
             ))
-
-        pretty_print_query(prepared)
+        if self.debug:
+            pretty_print_query(prepared)
         s = requests.Session()
         s.send(prepared)
 
