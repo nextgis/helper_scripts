@@ -10,4 +10,7 @@ COPY token /home/qmsmonitor/token
 COPY qms.json /home/qmsmonitor/qms.json
 
 WORKDIR /home/qmsmonitor
-CMD ["python", "/home/qmsmonitor/qmsnotifier3.py"]
+
+ADD crontab-init.sh crontab-init.sh
+RUN chmod +x crontab-init.sh
+CMD ["./crontab-init.sh"]
