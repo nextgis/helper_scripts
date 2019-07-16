@@ -1,5 +1,24 @@
 
 
+## Run in local docker
+
+```
+
+Commands for crontab creation for debug (no using secrects)
+
+RUN echo "* * * * * python /helper_scripts/ngw_replication/ngw_replication.py -url1 "http://dev.nextgis.com/sandbox" -layer1 247 -login1 administrator -pass1 demodemo -url2 "http://dev.nextgis.com/sandbox" -layer2 491 -login2 administrator -pass2 demodemo" > /etc/cron.d/replication-cron
+RUN echo "# An empty line is required at the end of this file for a valid cron file." >> /etc/cron.d/replication-cron
+
+
+Run in folder with code
+
+#Build image from dockerfile in current folder
+sudo docker build --rm -t trolleway/ngw_replication .
+
+#start cron
+sudo docker run -t -i trolleway/ngw_replication
+```
+
 
 ## Testing
 

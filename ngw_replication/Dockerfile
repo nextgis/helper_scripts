@@ -10,15 +10,11 @@ software-properties-common
 
 
 RUN git clone https://github.com/nextgis/helper_scripts.git
-RUN echo "* * * * * python /helper_scripts/ngw_replication/ngw_replication.py -url1 "http://dev.nextgis.com/sandbox" -layer1 247 -login1 administrator -pass1 demodemo -url2 "http://dev.nextgis.com/sandbox" -layer2 491 -login2 administrator -pass2 demodemo" > /etc/cron.d/replication-cron
-RUN echo "# An empty line is required at the end of this file for a valid cron file." >> /etc/cron.d/replication-cron
+WORKDIR helper_scripts/ngw_replication
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
+ADD crontab-init.sh crontab-init.sh
+RUN chmod +x crontab-init.sh
 
-# Give execution rights on the cron job
-RUN chmod 0644 /etc/cron.d/replication-cron
-
-# Apply cron job
-RUN crontab /etc/cron.d/replication-cron
-
-
-CMD ["cron", "-f"]
+CMD ["./crontab-init.sh"]
