@@ -25,18 +25,18 @@ sudo docker run -t -i trolleway/ngw_replication
 Create test layer
 ```
 #Create empty vector layer
-curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"vector_layer", "parent":{ "id":0 }, "display_name":"NGW replication testing - master layer", "keyname":null, "description":"Testing ngw_replication" }, "resmeta":{ "items":{ } }, "vector_layer":{ "srs":{ "id":3857 }, "geometry_type": "POINT", "fields": [ { "keyname": "Name", "datatype": "STRING" },{ "keyname": "Number", "datatype": "INTEGER" } ] } } ' http://dev.nextgis.com/sandbox/api/resource/
+curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"vector_layer", "parent":{ "id":0 }, "display_name":"NGW replication testing - master layer", "keyname":null, "description":"Testing ngw_replication" }, "resmeta":{ "items":{ } }, "vector_layer":{ "srs":{ "id":3857 }, "geometry_type": "POINT", "fields": [ { "keyname": "Name", "datatype": "STRING" },{ "keyname": "Number", "datatype": "INTEGER" } ] } } ' https://sandbox.nextgis.com/api/resource/
 
 #look id of new layer in response
 .resource.id
 
 
 #upload 2 features in new vector layer
-curl --user "administrator:demodemo" -H "Accept: */*" -X PATCH -d '[{   "fields": { "Name": 101 }, "geom": "POINT (15111666.6 6059666.6)" },{   "fields": { "Name": 102 }, "geom": "POINT (15112666.6 6059666.6)" },{   "fields": { "Name": 103 }, "geom": "POINT (15113666.6 6059666.6)" },{   "fields": { "Name": 104 }, "geom": "POINT (15114666.6 6059666.6)" }]   ' http://dev.nextgis.com/sandbox/api/resource/1501/feature/
+curl --user "administrator:demodemo" -H "Accept: */*" -X PATCH -d '[{   "fields": { "Name": 101 }, "geom": "POINT (15111666.6 6059666.6)" },{   "fields": { "Name": 102 }, "geom": "POINT (15112666.6 6059666.6)" },{   "fields": { "Name": 103 }, "geom": "POINT (15113666.6 6059666.6)" },{   "fields": { "Name": 104 }, "geom": "POINT (15114666.6 6059666.6)" }]   ' https://sandbox.nextgis.com/api/resource/1501/feature/
 
 
 #Create empty vector layer - slave with same structure, withouth data
-curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"vector_layer", "parent":{ "id":0 }, "display_name":"NGW replication testing - slave layer", "keyname":null, "description":"Testing ngw_replication" }, "resmeta":{ "items":{ } }, "vector_layer":{ "srs":{ "id":3857 }, "geometry_type": "POINT", "fields": [ { "keyname": "Name", "datatype": "STRING" } ] } } ' http://dev.nextgis.com/sandbox/api/resource/
+curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"vector_layer", "parent":{ "id":0 }, "display_name":"NGW replication testing - slave layer", "keyname":null, "description":"Testing ngw_replication" }, "resmeta":{ "items":{ } }, "vector_layer":{ "srs":{ "id":3857 }, "geometry_type": "POINT", "fields": [ { "keyname": "Name", "datatype": "STRING" } ] } } ' https://sandbox.nextgis.com/api/resource/
 
 
 #получение id слоя в bash (не очень работает)
