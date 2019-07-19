@@ -19,10 +19,17 @@ else:
 #os.chdir('all')
 files = glob.glob('*.zip')
 output = open('result.csv','wb')
-output.write('ID;REG;LAYER;NUM\n')
+output.write('REG;LAYER;NUM\n')
 
 for f in files:
-    f_reg = f.split('-2018')[0]
+    if '-2018' in f:
+        f_reg = f.split('-2018')[0]
+    elif '-2019' in f:
+        f_reg = f.split('-2019')[0]
+    elif '-2020' in f:
+        f_reg = f.split('-2020')[0]
+    elif '-bot' in f:
+        f_reg = f.split('-bot')[0]
     print('Processing ' + f)
     
     

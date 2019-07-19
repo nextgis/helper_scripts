@@ -39,6 +39,9 @@ import json
 import os
 import sys
 from bs4 import BeautifulSoup
+import shutil
+
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-t','--testmode', action="store_true", help='Run in test mode')
@@ -56,7 +59,7 @@ if args.testmode: chat_id = test_chat_id
 
 def downloadqms():
     url='https://qms.nextgis.com/api/v1/geoservices/?format=json'
-    filename='qms.json'
+    filename=os.path.join('data','qms.json')
     r = requests.get(url)
     with open(filename, "wb") as data_file:
         data_file.write(r.content)
@@ -101,17 +104,23 @@ def notify(type,link,name,url,submitter):
     print(response)
     
 if __name__ == '__main__':
-    if os.path.exists("qms_old.json"): os.remove("qms_old.json")
+    qms_fn=os.path.join('data','qms.json')
+    qms_old_fn=os.path.join('data','qms_old.json')
+    
+    if not os.path.exists(qms_fn): shutil.copy('qms.json',qms_fn)
+    
+    if os.path.exists(qms_old_fn): os.remove(qms_old_fn)
 
-    if os.path.exists("qms.json"):
-        os.rename("qms.json","qms_old.json")
+    if os.path.exists(qms_fn):
+        os.rename(qms_fn,qms_old_fn)
 
         qmslist_new = downloadqms()
         
-        with open("qms_old.json") as data_file:    
+        with open(qms_old_fn) as data_file:    
             qmslist_old = json.load(data_file)
         
         for item in qmslist_new:
+            print(item)
             exist_qms = find_qms(item['id'])
             if exist_qms == False:
                 #print('id' + str(item['id']))
