@@ -18,13 +18,13 @@ This is a script intended for manual run before start ngw_replication, for full 
 Create new layer in ngw (in sandbox)
 
 ```
-curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"vector_layer", "parent":{ "id":0 }, "display_name":"NGW replication testing - master layer", "keyname":null, "description":"Testing ngw_replication" }, "resmeta":{ "items":{ } }, "vector_layer":{ "srs":{ "id":3857 }, "geometry_type": "POINT", "fields": [ { "keyname": "Name", "datatype": "STRING" },{ "keyname": "Number", "datatype": "INTEGER" } ] } } ' https://sandbox.nextgis.com
+curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"vector_layer", "parent":{ "id":0 }, "display_name":"NGW replication testing - master layer", "keyname":null, "description":"Testing ngw_replication" }, "resmeta":{ "items":{ } }, "vector_layer":{ "srs":{ "id":3857 }, "geometry_type": "POINT", "fields": [ { "keyname": "Name", "datatype": "STRING" },{ "keyname": "Number", "datatype": "INTEGER" } ] } } ' https://sandbox.nextgis.com/api/resource/
 ```
 look id of new layer in response
 
 Create new resourse group
 ```
-curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"resource_group", "parent":{ "id":0 }, "display_name":"NGW layer coping test", "keyname":null, "description":"Testing" } } ' https://sandbox.nextgis.com
+curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{ "cls":"resource_group", "parent":{ "id":0 }, "display_name":"NGW layer coping test", "keyname":null, "description":"Testing" } } ' https://sandbox.nextgis.com/api/resource/
 
 ```
 
