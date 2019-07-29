@@ -31,8 +31,8 @@ curl --user "administrator:demodemo" -H "Accept: */*" -X POST -d '{ "resource":{
 Set correct IDs here
 ```
 python ngw_layer_copy.py \
---src_url http://dev.nextgis.com/sandbox/ --src_layer 1101 --src_login administrator --src_password demodemo \
---dst_url http://dev.nextgis.com/sandbox/ --dst_gropup 1100 --dst_login administrator --dst_password demodemo
+--src_url https://sandbox.nextgis.com --src_layer 1101 --src_login administrator --src_password demodemo \
+--dst_url https://sandbox.nextgis.com --dst_gropup 1100 --dst_login administrator --dst_password demodemo
 ```
 
 Later, you can use script ngw_replication to copy features to other layer.
