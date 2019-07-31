@@ -144,3 +144,18 @@ rm ${BASE}_B3.TIF
 rm ${BASE}_B4.TIF
 rm ${BASE}_B8.TIF
 ```
+
+## Landsat-7 
+
+Скрипт для выкачивания Landsat-5,7,8 c earthexplorer.usgs.gov по айдишникам
+```
+git clone https://github.com/olivierhagolle/LANDSAT-Download.git
+
+cat > scenes.txt << EOF
+moscow LE71790212000273SGS00
+EOF
+
+mkdir scenes
+python LANDSAT-Download/download_landsat_scene.py -o liste -l $(pwd)/scenes.txt -u $(pwd)/usgs.txt --output scenes
+
+```
