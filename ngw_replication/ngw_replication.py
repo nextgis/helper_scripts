@@ -371,8 +371,14 @@ class Replicator():
 
                         #add attachment to nextgisweb feature
 
-                        url = secondary_ngw_url + '/api/' + '/resource/' + secondary_layer_id + '/feature/'+  str(secondary_feature_id) + '/attachment/'
-                        req = requests.post(url, data=json.dumps(attach_data), auth=secondary_ngw_creds)
+                        url = secondary_ngw_url + '/api/resource/' + secondary_layer_id + '/feature/'+  str(secondary_feature_id) + '/attachment/'
+                        #req = requests.post(url, data=json.dumps(attach_data), auth=secondary_ngw_creds)
+                        req = requests.Request('POST',url=url ,data=json.dumps(attach_data), auth=secondary_ngw_creds)
+                        prepared = req.prepare()
+
+                        if self.debug:  self.pretty_print_query(prepared)
+                        s = requests.Session()
+                        s.send(prepared)
 
 
                     '''
