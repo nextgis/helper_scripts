@@ -113,7 +113,7 @@ Layers should have same fields
 
 class Replicator():
 
-    debug = False
+    debug = args.debug
 
     def check_layers_has_same_structure(self):
 
@@ -174,15 +174,9 @@ class Replicator():
                 #more smart requests call for easer debug
                 req = requests.Request('PATCH',url ,data=json.dumps(block), auth=ngw_creds)
                 prepared = req.prepare()
-                def pretty_print_query(req):
-                    print('\n{}\n{}\n{}\n\n{}'.format(
-                        '-----------REQUEST-----------',
-                        req.method + ' ' + req.url,
-                        '\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
-                        req.body,
-                    ))
+
                 if self.debug:
-                    pretty_print_query(prepared)
+                    self.pretty_print_query(prepared)
                 s = requests.Session()
                 s.send(prepared)
 
@@ -313,25 +307,29 @@ class Replicator():
         else:
             return False
 
+    def pretty_print_query(self,req):
+        print('\n{}\n{}\n{}\n\n{}'.format(
+            '-----------REQUEST-----------',
+            req.method + ' ' + req.url,
+            '\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
+            req.body,
+        ))
+
+
+
     def add_metadata(self, ngw_url, layer_id, ngw_creds,key,value):
         payload = dict()
         payload['resmeta'] = dict()
         payload['resmeta']['items'] = dict()
         payload['resmeta']['items'][key] = value
 
-        url = ngw_url + '/api/' + '/resource/' + layer_id
+        url = ngw_url + '/api/resource/' + layer_id
         #more smart requests call for easer debug
         req = requests.Request('PUT',url ,data=json.dumps(payload), auth=ngw_creds)
         prepared = req.prepare()
-        def pretty_print_query(req):
-            print('\n{}\n{}\n{}\n\n{}'.format(
-                '-----------REQUEST-----------',
-                req.method + ' ' + req.url,
-                '\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
-                req.body,
-            ))
+
         if self.debug:
-            pretty_print_query(prepared)
+            self.pretty_print_query(prepared)
         s = requests.Session()
         s.send(prepared)
 
@@ -362,7 +360,7 @@ class Replicator():
                         #upload attachment to nextgisweb
                         secondary_feature_id = dump_secondary[i]['id']
                         url = secondary_ngw_url + '/api/component/file_upload/upload'
-                        req = requests.put(url, data=f, auth=secondary_ngw_creds)
+                        req = requests.put(url, data=f.content, auth=secondary_ngw_creds)
 
                         #print req.content
                         json_data = req.json()
