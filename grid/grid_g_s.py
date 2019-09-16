@@ -61,16 +61,18 @@ def get_args():
     python grid.py -s 100 src.geojson dst.gpkg  '''
     p = argparse.ArgumentParser(description="Generate grid of points into source polygons", epilog=epilog)
 
-    p.add_argument('--step','-s',required=False, default = 1000,help='Steps in meters')
-    p.add_argument('src', help='This will be option two')
-    p.add_argument('dest', help='This will be option two')
+    p.add_argument('--step',required=False, default = 1000,help='Steps in meters')
+    p.add_argument('--mode',required=False,choices=['point', 'rect'], default = 'point',help='Grid mode.')
+
+    p.add_argument('src', help='Vector polygonal or multipolygonal file with boundaries. Any format, any projection.')
+    p.add_argument('dest', help='Result file. Extension should be .gpkg or .shp')
 
     p.add_argument('--verbose', '-v', help='messages', action='store_true')
     #p.add_argument('--config', help='patch to config.py file',required=False)
     return p.parse_args()
 
 
-args = get_args()
+
 
 def get_utm_zone(centroid):
 
@@ -85,39 +87,69 @@ def get_utm_zone(centroid):
 
 
 def process():
+
+    args = get_args()
+    '''
+
     #open boundary geometry
     inputfn = 'samples/boundaries.geojson'
     outputGridfn = 'samples/grid.geojson'
-    outputDriverName = 'geojson'
+    outputDriverName = 'ESRI Shapefile'
+    
+    #debug defaults
     mode = 'point' #point,rect
-
+    
     gridWidth = 1000
     gridHeight = 1000
+    '''
 
-    inputds = ogr.Open(inputfn)
-    inLayer = inputds.GetLayer()
+    #-------------------------------------
+    #use argparse
 
-    #create output layer
+    gridWidth = float(args.step)
+    gridHeight = float(args.step)
 
-    outDriver = ogr.GetDriverByName(outputDriverName)
-    if os.path.exists(outputGridfn):
-        os.remove(outputGridfn)
-    outDataSource = outDriver.CreateDataSource(outputGridfn)
-    if mode == 'rect':
-        outLayer = outDataSource.CreateLayer(outputGridfn,geom_type=ogr.wkbPolygon)
-    elif mode == 'point':
-        outLayer = outDataSource.CreateLayer(outputGridfn,geom_type=ogr.wkbPoint)
-    elif mode == 'point2':
-        outLayer = outDataSource.CreateLayer(outputGridfn,geom_type=ogr.wkbPoint)
-    featureDefn = outLayer.GetLayerDefn()
+    mode = args.mode
+
+    inputfn = args.src
+    outputGridfn = args.dest
+
+
+    filename, file_extension = os.path.splitext(outputGridfn)
+    if file_extension.upper() == '.SHP':
+        outputDriverName = 'ESRI Shapefile'
+    elif file_extension.upper() == '.GPKG':
+        outputDriverName = 'gpkg'
+    else:
+        raise AttributeError('Not supported output format. Extension should be .gpkg or .shp')
+        quit()
 
     
+    inputds = ogr.Open(inputfn)
+    inLayer = inputds.GetLayer()
+    #create output layer
+
     srcSpatialRef = inLayer.GetSpatialRef()
 
     # output SpatialReference
     wgs1984SpatialRef = osr.SpatialReference()
     wgs1984SpatialRef.ImportFromEPSG(4326)
     coordTrans = osr.CoordinateTransformation(srcSpatialRef, wgs1984SpatialRef)
+
+    outDriver = ogr.GetDriverByName(outputDriverName)
+    if os.path.exists(outputGridfn):
+        os.remove(outputGridfn)
+    outDataSource = outDriver.CreateDataSource(outputGridfn)
+    if mode == 'rect':
+        outLayer = outDataSource.CreateLayer(outputGridfn,wgs1984SpatialRef,geom_type=ogr.wkbPolygon)
+    elif mode == 'point':
+        outLayer = outDataSource.CreateLayer(outputGridfn,wgs1984SpatialRef,geom_type=ogr.wkbPoint)
+    elif mode == 'point2':
+        outLayer = outDataSource.CreateLayer(outputGridfn,wgs1984SpatialRef,geom_type=ogr.wkbPoint)
+    featureDefn = outLayer.GetLayerDefn()
+
+    
+
     
 
 
