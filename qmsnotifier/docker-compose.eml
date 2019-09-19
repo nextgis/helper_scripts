@@ -5,7 +5,7 @@ volumes:
 
 services:
   qmsmonitor:
-    image: registry.nextgis.com/qmsmonitor:1.0.0
+    image: registry.nextgis.com/qmsnotifier:1.0.0
     volumes:
       - data:/home/qmsnotifier/data
     deploy:
