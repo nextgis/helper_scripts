@@ -1,5 +1,5 @@
 #Outputs a list of ids of resources for which permissions are set
-#ngw_check_permissions.py -u demo -r https
+#python ngw_check_permissions.py -u sandbox -r https -n administrator -p demodemo
 
 import requests
 import argparse
