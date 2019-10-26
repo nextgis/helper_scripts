@@ -27,6 +27,7 @@ Helpful scripts
 * dict_sync - sync lookup tables with remote sources
 * update_ngw_from_geojson.py - sync layer in ngw with local file with unique id field.
 * oopt_federation.py - скрипт для конкретного проекта, сейчас приостановлен.
+* arcgis_featureservice2ngw.py - import to NextGIS Web all layers from ArcGIS Feature service.
  
 # License
 
