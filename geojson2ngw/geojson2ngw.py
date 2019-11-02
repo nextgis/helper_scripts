@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 '''
-Upload all geojson from folder into NextGISWeb as new layers, and create simple mapserver styles
+Upload all geojsons from folder into NextGISWeb as new layers, and create simple mapserver styles
 
 Usage: geojson2ngw.py foldername
 
-Example: python geojson2ngw.py --login admin --password pass --groupname NEW --parent 499 --folder d:\Thematic\histgeo\ --url http://dev.nextgis.com/practice2
+Example: python geojson2ngw.py --url https://sandbox.nextgis.com --login admininstrator --password demodemo --groupname NEWUPLOAD --parent 0 --folder sample
 '''
-
-
 
 from __future__ import unicode_literals
 import os
@@ -36,25 +34,22 @@ def argparser_prepare():
 
     parser = argparse.ArgumentParser(description='Upload all geojson from folder into NextGISWeb as new layers, and create of simple mapserver style.',
             formatter_class=PrettyFormatter)
-    parser.add_argument('--url', type=str,required=False, help='NGW instance url')
-    parser.add_argument('--login', default='administrator', required=False, help = 'ngw login')
-    parser.add_argument('--password', default='admin', required=False, help = 'ngw password')
-    parser.add_argument('--parent', type=int, help='id of parent group', default=0, required=False)
-    parser.add_argument('--groupname', type=str, help='name of new group. Create only if parent=0', default=DEFAULT_GRPNAME, required=False)
-    parser.add_argument('--folder', help = 'Take all geojsons from this folder')
+    parser.add_argument('-u', '--url', type=str,required=False, help='NGW instance url')
+    parser.add_argument('-l', '--login', default='administrator', required=False, help = 'ngw login')
+    parser.add_argument('-p', '--password', default='admin', required=False, help = 'ngw password')
+    parser.add_argument('-r', '--parent', type=int, help='id of parent group', default=0, required=False)
+    parser.add_argument('-d', '--debug', action='store_true', help='Print debug messages', required=False)
+    parser.add_argument('-g', '--groupname', type=str, help='name of new group. Create only if parent=0', default=DEFAULT_GRPNAME, required=False)
+    parser.add_argument('-f', '--folder', help = 'Take all geojsons from this folder')
     creating_group_parser = parser.add_mutually_exclusive_group(required=False)
     creating_group_parser.add_argument('--create', dest='create', help = 'Create new resourse group', action='store_true',default=True)
-    creating_group_parser.add_argument('--no-create', dest='create', help = 'Upload layers into existing resourse group', action='store_false',default=False)
-
-
-
-
+    creating_group_parser.add_argument('--no-create', dest='create', help = 'Upload layers into existing resourse group', action='store_false', default=False)
 
     parser.epilog = \
         '''Samples: 
 
 #upload all geojsons from current folder
-time python %(prog)s --url http://trolleway.nextgis.com --parent 19 --login administrator --password admin 
+time python %(prog)s --url http://sandbox.nextgis.com --parent 19 --login administrator --password demodemo 
 
 ''' \
         % {'prog': parser.prog}
@@ -95,8 +90,6 @@ def run_user_interface(parser=None):
 parser = argparser_prepare()
 args = parser.parse_args()
 
-
-
 #if none arguments, run user interface
 if args.url == None:
     user_commands = run_user_interface(parser)
@@ -121,7 +114,7 @@ else:
 
     create = args.create
 
-args = None #don't use afterwards
+#args = None #don't use afterwards
 
 # Что бы не было попыток создать несколько групп с одинаковым именем, добавим дату и время к имени группы
 if groupname == DEFAULT_GRPNAME:
@@ -144,11 +137,12 @@ def req(method, url, json=None, **kwargs):
     req = requests.Request(method, url, auth=AUTH, **kwargs)
     preq = req.prepare()
 
-    print ""
-    print ">>> %s %s" % (method, url)
+    if args.debug: 
+        print ""
+        print ">>> %s %s" % (method, url)
 
-    if jsonuc:
-        print ">>> %s" % jsonuc
+        if jsonuc:
+            print ">>> %s" % jsonuc
 
     resp = s.send(preq, timeout=None)
 
@@ -160,20 +154,20 @@ def req(method, url, json=None, **kwargs):
         print 'bad response'
         print resp.text
         raise
-    for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
-        print "<<< %s" % line
+
+    if args.debug: 
+        for line in dumps(jsonresp, ensure_ascii=False, indent=4).split("\n"):
+            print "<<< %s" % line
 
     return jsonresp
 
 # Обертки по именам HTTP запросов, по одной на каждый тип запроса
-
 def get(url, **kwargs): return req('GET', url, **kwargs)            # NOQA
 def post(url, **kwargs): return req('POST', url, **kwargs)          # NOQA
 def put(url, **kwargs): return req('PUT', url, **kwargs)            # NOQA
 def delete(url, **kwargs): return req('DELETE', url, **kwargs)      # NOQA
 
 # Собственно работа с REST API
-
 iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
 courl = lambda: '%s/api/resource/' % URL
 
@@ -204,12 +198,11 @@ get(iturl(grpid))
 upload_styles_responses = list()
 
 # Проходим по файлам, ищем geojson
-
 files = filter(os.path.isfile, os.listdir( destdir ) )
 for dirpath, dnames, fnames in os.walk(destdir):
     for filename in fnames:
-        print repr(filename)
-        if ('.geojson' in repr(filename)) or ('.GEOJSON' in repr(filename)): #use lower finction to filename casue fail at cyrilic filename
+        if args.debug: print repr(filename)
+        if ('.geojson' in repr(filename)) or ('.GEOJSON' in repr(filename)): #apply lower to filename as it fails for cyrillic filename
             filepath = (os.path.join(dirpath, filename))   
             print "uploading "+filename
             
@@ -221,32 +214,28 @@ for dirpath, dnames, fnames in os.walk(destdir):
             with open(filepath, 'rb') as fd:
                 shpzip = put(URL + '/api/component/file_upload/upload', data=fd)
 
-
             # Пока поддержка различных систем координат толком не реализована, но для
             # создания слоя нужно указать хоть какую-то.
             srs = dict(id=3857)
 
-            # Теперь непосредственно создание слоя, в целом оно точно так же как и создание
-            # группы работает, но указывается другой класс ресурса + данные этого класса -
-            # в нашем случае это система координат и исходный файл.
+            #Create a layer
             vectlyr = post(courl(), json=dict(
                 resource=dict(cls='vector_layer', parent=grpref, display_name=os.path.splitext(filename)[0]),
                 vector_layer=dict(srs=srs, source=shpzip)
             ))
 
-            #Создание стиля
+            #Create a style
             vectstyle = post(courl(), json=dict(
                 resource=dict(cls='mapserver_style', parent=vectlyr, display_name=os.path.splitext(filename)[0]),
                 mapserver_style=dict(xml="<map><layer><class><style><color red=\"255\" green=\"240\" blue=\"189\"/><outlinecolor red=\"255\" green=\"196\" blue=\"0\"/></style></class></layer></map>")
             ))
             upload_styles_responses.append(vectstyle)
             
-# iterate through files, search for tiff 
-
+# iterate over tifs
 files = filter(os.path.isfile, os.listdir( destdir ) )
 for dirpath, dnames, fnames in os.walk(destdir):
     for filename in fnames:
-        print repr(filename)
+        if args.debug: print repr(filename)
         if ('.tif' in repr(filename)) or ('.TIF' in repr(filename)): #use lower finction to filename casue fail at cyrilic filename
             filepath = (os.path.join(dirpath, filename))   
             print "uploading "+filename
@@ -255,24 +244,22 @@ for dirpath, dnames, fnames in os.walk(destdir):
             with open(filepath, 'rb') as fd:
                 tif = put(URL + '/api/component/file_upload/upload', data=fd)
 
-
             # ???
             srs = dict(id=3857)
 
-            # Query for create layer
+            #Create a layer
             rastlyr = post(courl(), json=dict(
                 resource=dict(cls='raster_layer', parent=grpref, display_name=os.path.splitext(filename)[0]),
                 raster_layer=dict(srs=srs, source=tif)
             ))
 
-            #Query for create style
+            #Create a style
             rasterstyle = post(courl(), json=dict(
                 resource=dict(cls='raster_style', parent=rastlyr, display_name=os.path.splitext(filename)[0]),
                 
             ))
             upload_styles_responses.append(vectstyle)
             
-for style in upload_styles_responses:
-    print style['resource']['id']
+#for style in upload_styles_responses:
+#    print style['resource']['id']
     
-#vectlyr['id']
