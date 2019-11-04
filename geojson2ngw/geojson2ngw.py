@@ -158,10 +158,10 @@ def process():
     files = filter(os.path.isfile, os.listdir( destdir ) )
     for dirpath, dnames, fnames in os.walk(destdir):
         for filename in fnames:
-            if args.debug: print repr(filename)
+            if args.debug: print(repr(filename))
             if ('.geojson' in repr(filename)) or ('.GEOJSON' in repr(filename)): #apply lower to filename as it fails for cyrillic filename
                 filepath = (os.path.join(dirpath, filename))   
-                print "uploading "+filename
+                print("uploading "+filename)
                 
                 # Теперь создадим векторный слой из geojson-файла. Для начала нужно загрузить
                 # исходный ZIP-архив, поскольку передача файла внутри REST API - что-то
@@ -192,10 +192,10 @@ def process():
     files = filter(os.path.isfile, os.listdir( destdir ) )
     for dirpath, dnames, fnames in os.walk(destdir):
         for filename in fnames:
-            if args.debug: print repr(filename)
+            if args.debug: print(repr(filename))
             if ('.tif' in repr(filename)) or ('.TIF' in repr(filename)): #use lower finction to filename casue fail at cyrilic filename
                 filepath = (os.path.join(dirpath, filename))   
-                print "uploading "+filename
+                print("uploading "+filename)
                 
                 # Upload raster file
                 with open(filepath, 'rb') as fd:
