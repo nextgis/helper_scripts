@@ -125,7 +125,7 @@ def delete(url, **kwargs): return req('DELETE', url, **kwargs)      # NOQA
 
 def process():
     # Собственно работа с REST API
-    iturl = lambda (id): '%s/api/resource/%d' % (URL, id)
+    iturl = lambda id: '%s/api/resource/%d' % (URL, id)
     courl = lambda: '%s/api/resource/' % URL
 
     if create:
