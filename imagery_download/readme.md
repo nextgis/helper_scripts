@@ -3,7 +3,7 @@
 # Sentinel
 
 ## Download Sentinel-2 in python
-Этот скрипт качает sentinel бесплатно (проверено в 2018-06), и сваливает их как zip-архивы
+Этот скрипт качает sentinel бесплатно (проверено в 2019-11), и сваливает их как zip-архивы
 ```
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
@@ -31,7 +31,7 @@ api.download_all(products)
 ## sentinel_unpack.sh
 ## Unpack Sentinel-2 scenes and crop by polygon in bash
 
-открывает не все сцены, нужно добавить получение пути к субдатасету из gdalinfo, чтоб вытаскивалось EPSG
+Открывает сцены Sentinel, берёт каналы для natural colors, обрезает с использованием альфа-канала
 
 
 ## Generate external previews for imagery
