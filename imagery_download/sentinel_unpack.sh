@@ -7,10 +7,15 @@ do
   scene=`echo $ref | sed 's/\.zip$//'`
   scene="$(basename -- $scene)"
 
+
+  if [ -f "$scene.tif" ]; then
+    echo "$scene aleadry exist"
+    continue
+  fi
+
+
   #set -x
   
-  
-
   #получение пути к субдатасету
   subdataset=`gdalinfo -json $path$scene.zip  | jq -r '.metadata.SUBDATASETS.SUBDATASET_2_NAME'`
   echo $subdataset
