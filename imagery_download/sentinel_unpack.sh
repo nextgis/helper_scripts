@@ -1,6 +1,6 @@
 #!/bin/sh
 
-path='../../'
+path='../../../201911/'
 cutlinepath='aoi.geojson'
 for ref in $path*.zip
 do
@@ -23,7 +23,7 @@ do
   
   #открытие zip-архива Sentinel2, создание geotiff
   #gdal_translate SENTINEL2_L2A:/vsizip/$path$scene.zip/$scene.SAFE/MTD_MSIL2A.xml:20m:EPSG_32650 $scene-stage1.tif -oo ALPHA=YES -co TILED=YES --config GDAL_CACHEMAX 1000 --config GDAL_NUM_THREADS AUTO
-  gdal_translate $subdataset $scene-stage1.tif -oo ALPHA=YES -co TILED=YES --config GDAL_CACHEMAX 1000 --config GDAL_NUM_THREADS AUTO
+  gdal_translate $subdataset $scene-stage1.tif -oo ALPHA=YES -co TILED=YES --config GDAL_CACHEMAX 1000 #--config GDAL_NUM_THREADS AUTO
 
 
   #вытаскивание конкретных каналов rgb
