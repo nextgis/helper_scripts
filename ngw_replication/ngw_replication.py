@@ -7,15 +7,34 @@
 # Upload images to a Web GIS
 # More: https://gitlab.com/nextgis/helper_scripts
 #
-# Usage:
-#      photos2ngw.py [-h] [-o] [-of ORIGINALS_FOLDER]
-#      where:
-#           -h              show this help message and exit
-#           -o              overwrite
-#           -of             relative path to folder with originals
-#           -t              type of data, license or gin
-# Example:
-#      python photos2ngw.py -of originals_gkm -t gkm
+#usage: ngw_replication.py [-h] --primary_ngw_url PRIMARY_NGW_URL
+#                          --primary_ngw_layer PRIMARY_NGW_LAYER
+#                          --primary_ngw_login PRIMARY_NGW_LOGIN
+#                          --primary_ngw_password PRIMARY_NGW_PASSWORD
+#                          --secondary_ngw_url SECONDARY_NGW_URL
+#                          --secondary_ngw_layer SECONDARY_NGW_LAYER
+#                          --secondary_ngw_login SECONDARY_NGW_LOGIN
+#                          --secondary_ngw_password SECONDARY_NGW_PASSWORD
+#                          [--debug]
+#
+#Replicate vector layer from ngw to other ngw. Layer metadata are not coping,
+#and may be erased.
+#
+#optional arguments:
+#  -h, --help            show this help message and exit
+#  --primary_ngw_url PRIMARY_NGW_URL, -url1 PRIMARY_NGW_URL
+#  --primary_ngw_layer PRIMARY_NGW_LAYER, -layer1 PRIMARY_NGW_LAYER
+#  --primary_ngw_login PRIMARY_NGW_LOGIN, -login1 PRIMARY_NGW_LOGIN
+#  --primary_ngw_password PRIMARY_NGW_PASSWORD, -pass1 PRIMARY_NGW_PASSWORD
+#  --secondary_ngw_url SECONDARY_NGW_URL, -url2 SECONDARY_NGW_URL
+#  --secondary_ngw_layer SECONDARY_NGW_LAYER, -layer2 SECONDARY_NGW_LAYER
+#  --secondary_ngw_login SECONDARY_NGW_LOGIN, -login2 SECONDARY_NGW_LOGIN
+#  --secondary_ngw_password SECONDARY_NGW_PASSWORD, -pass2 SECONDARY_NGW_PASSWORD
+#  --debug, -d           debug mode
+#
+#Sample: python ngw_replication.py -url1 "https://sandbox.nextgis.com/" -layer1
+#247 -login1 administrator -pass1 demodemo -url2 "https://sandbox.nextgis.com/"
+#-layer2 491 -login2 administrator -pass2 demodemo
 #
 # Copyright (C) 2019-present Artem Svetlov (artem.svetlov@nextgis.com)
 #
@@ -49,10 +68,10 @@ import datetime
 def get_args():
     epilog = '''Sample: '''
     epilog +=  '''
-    python ngw_replication.py -url1 "http://dev.nextgis.com/sandbox" -layer1 247 -login1 administrator -pass1 demodemo -url2 "http://dev.nextgis.com/sandbox" -layer2 491 -login2 administrator -pass2 demodemo '''
+    python ngw_replication.py -url1 "https://sandbox.nextgis.com/" -layer1 247 -login1 administrator -pass1 demodemo -url2 "https://sandbox.nextgis.com/" -layer2 491 -login2 administrator -pass2 demodemo '''
     epilog +=  '''
-    This script erases metadata of layer'''
-    p = argparse.ArgumentParser(description="Replicate vector layer from ngw to other ngw", epilog=epilog)
+    '''
+    p = argparse.ArgumentParser(description="Replicate vector layer from ngw to other ngw. Layer metadata are not coping, and may be erased.", epilog=epilog)
 
     p.add_argument('--primary_ngw_url','-url1',required=True)
     p.add_argument('--primary_ngw_layer','-layer1',required=True)
