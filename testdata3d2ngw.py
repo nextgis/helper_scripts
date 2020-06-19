@@ -364,7 +364,8 @@ def create_scene_3d():
         root_item=dict(
             item_type='root',
             children=[{**dict(
-                item_type='item'
+                item_type='item',
+                visible=False
             ), **item} for item in scene3d_layers]
         )
     )
@@ -373,7 +374,7 @@ def create_scene_3d():
             terrains3d=[dict(
                 resource_id=terrain_provider_id,
                 display_name=terrain_provider['provider_name'],
-                enabled=True
+                enabled=False
             )]
         )
     )
