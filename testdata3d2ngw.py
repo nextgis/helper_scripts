@@ -241,7 +241,7 @@ def create_layer_model3d():
     style3d_id = post_resource('style_3d', style3d_name, layer_id, style3d_body)
     scene3d_layers.append(dict(
         resource_id=style3d_id,
-        display_name=style3d_name
+        display_name=layer_model3d_name
     ))
 
 
@@ -270,7 +270,7 @@ def create_layer_poi():
     style3d_id = post_resource('style_3d', style3d_name, layer_id, style3d_body)
     scene3d_layers.append(dict(
         resource_id=style3d_id,
-        display_name=style3d_name
+        display_name=layer_poi_name
     ))
 
 
@@ -294,7 +294,7 @@ def create_layer_polygon_z():
     style3d_id = post_resource('style_3d', style3d_name, layer_id, style3d_body)
     scene3d_layers.append(dict(
         resource_id=style3d_id,
-        display_name=style3d_name
+        display_name=layer_polygon_z_name
     ))
 
 
@@ -318,7 +318,7 @@ def create_layer_polygon_extrude():
     style3d_id = post_resource('style_3d', style3d_name, layer_id, style3d_body)
     scene3d_layers.append(dict(
         resource_id=style3d_id,
-        display_name=style3d_name
+        display_name=layer_polygon_extrude_name
     ))
 
 
