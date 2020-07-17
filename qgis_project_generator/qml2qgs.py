@@ -366,7 +366,7 @@ def qml2qgs():
     LEGEND = LEGEND,
     PROJECTLAYERS = PROJECTLAYERS,
     )
-    qgs_filename = os.path.join('styles','style_testing'+'.qgs')
+    qgs_filename = 'output.qgs'
         
     with open(qgs_filename, "w") as text_file:
         text_file.write(template_qgs_code)
