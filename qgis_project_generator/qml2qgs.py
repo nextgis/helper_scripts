@@ -16,44 +16,7 @@ import textwrap
 
 
 
-def get_layers_list(qml_list):
-    #return python list of dicts with layer filenames
-    '''
-    filename
-    layer
-    name
-    id (like name)
-    qml_path
-    '''
-    layers=list()
-    filename=os.path.join('data','100k.gpkg')
-    for element in qml_list:
-        exp=dict()
-        
-        layer_basename=os.path.splitext(element)[0]
-        exp['filename']=filename
-        exp['layer']=layer_basename.replace('_100k','')
-        exp['name']=layer_basename.replace('_100k','')+' (тут будет русское название)'
-        exp['id']=layer_basename.replace('_100k','')+'20200708110814603'
-        exp['qml_path']=os.path.join('styles',element)
-        layers.append(exp)
-    
-    return layers
-    
 
-
-def get_qml_list():
-    #return python list of qmls
-    path='styles'
-    extensions=['qml']
-    file_names = [fn for fn in os.listdir(path)
-              if any(fn.endswith(ext) for ext in extensions)]
-              
-    return file_names
-
-def order_layers(layers):
-    #ручная сортировка слоёв, что там выше - дороги или реки
-    return layers
 
 def get_layer_tree_group(layers):
 
@@ -341,13 +304,9 @@ def get_maplayers(layers):
     
     
       
-def qml2qgs():
+def qml2qgs(layers):
 
-    qmls=get_qml_list()
-    layers=get_layers_list(qmls)
-    
-    layers=order_layers(layers)
-    
+   
     LAYER_TREE_GROUP = get_layer_tree_group(layers)
     LAYER_COORDINATE_TRANSFORM_INFO = get_layer_coordinate_transform_info(layers)
     LAYER_TREE_CANVAS = get_layer_tree_canvas(layers)
