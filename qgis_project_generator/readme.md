@@ -6,6 +6,14 @@ Generate qgis project from folder of qml files.
 
 Put vector layers (gpkg with layers) and same-named qgl files into folder.
 
+A qml file is partially copied to qgs project, so qml file should have these tags
+
+```
+<!--START COPY TO PROJECT FILE-->
+<!--END COPY TO PROJECT FILE-->
+```
+For simplicity there is no any xml features processing, just text operations
+
 create list of dict of layers
 ```
     layers=list()
