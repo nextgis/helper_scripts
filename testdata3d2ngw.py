@@ -9,7 +9,7 @@ DEBUG = False
 
 
 settings = dict(
-    NGW_URL='http://localhost:8080',
+    NGW_URL='http://mggt.staging.nextgis.com',#'http://localhost:8080',
     AUTH=('administrator', 'admin'),
     PARENT_ID=0,
     DEMO_GROUP='3D demo',
@@ -66,9 +66,13 @@ layer_polygon_extrude_fields = dict(
     height='z_first'
 )
 
-# 3D tileset
-tileset_3d = 'https://github.com/nextgis/testdata/raw/master/3d/3d_tilesets/b3dm-cmpt-BIM.zip'
-tileset_3d_name = 'b3dm-cmpt-BIM'
+# 3D tileset BIM
+tileset_bim = 'https://github.com/nextgis/testdata/raw/master/3d/3d_tilesets/b3dm-cmpt-BIM.zip'
+tileset_bim_name = 'b3dm-cmpt-BIM'
+
+# 3D tileset Photogrammetry
+tileset_pg = 'https://nextgis.ru/data/ngw_3d/B3dm-АРМА.zip'
+tileset_pg_name = 'b3dm-ARMA'
 
 # Terrain provider
 terrain_provider = dict(
@@ -322,13 +326,13 @@ def create_layer_polygon_extrude():
     ))
 
 
-def create_tileset_3d():
-    upload_meta = upload_file('url', tileset_3d)
-    tileset_3d_body = dict(archive=upload_meta)
-    tileset_3d_id = post_resource('tileset_3d', tileset_3d_name, demo_group_id, tileset_3d_body)
+def create_tileset(tileset,tileset_name):
+    upload_meta = upload_file('url', tileset)
+    tileset_body = dict(archive=upload_meta)
+    tileset_id = post_resource('tileset_3d', tileset_name, demo_group_id, tileset_body)
     scene3d_layers.append(dict(
-        resource_id=tileset_3d_id,
-        display_name=tileset_3d_name
+        resource_id=tileset_id,
+        display_name=tileset_name
     ))
 
 
@@ -392,8 +396,7 @@ if __name__ == "__main__":
     create_layer_polygon_z()
     create_layer_polygon_extrude()
 
-    create_tileset_3d()
-
+    create_tileset(tileset_bim,tileset_bim_name)
+    create_tileset(tileset_pg,tileset_pg_name)
     create_terrain_provider()
-
     create_scene_3d()
