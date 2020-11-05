@@ -3,7 +3,9 @@ from html import unescape
 import json
 import re
 from requests import get, Request, Session
-from urllib.parse import urljoin
+from subprocess import check_output
+from tempfile import NamedTemporaryFile
+from urllib.parse import urljoin, urlparse
 
 DEBUG = False
 
@@ -67,7 +69,7 @@ layer_polygon_extrude_fields = dict(
 )
 
 # 3D tileset BIM
-tileset_bim = 'https://github.com/nextgis/testdata/raw/master/3d/3d_tilesets/b3dm-cmpt-BIM.zip'
+tileset_bim = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/3d_tilesets/b3dm-cmpt-BIM.zip'
 tileset_bim_name = 'b3dm-cmpt-BIM'
 
 # 3D tileset Photogrammetry
@@ -149,14 +151,23 @@ def ngw_request(method, path, **kwargs):
 
 def upload_file(mode, src, name=None):
     upload_path = '/api/component/file_upload/upload'
+    tus_upload_path = '/api/component/file_upload/'
 
     if mode == 'url':
-        req = get(src)
-        data = req.content
-    elif mode == 'data':
-        data = src
+        log("Upload file from %s..." % src)
+        response = get(src, allow_redirects=True,stream=True)
+        with NamedTemporaryFile('wb') as tmp:
+            for chunk in response.iter_content(chunk_size=1024):
+                tmp.write(chunk)
+            tmp.flush()
+            furl = check_output(['tusc', 'client', urljoin(settings['NGW_URL'], tus_upload_path), tmp.name]).strip()
+            debug('tus upload_meta: %s' % furl)
+        response = get(furl, auth=settings['AUTH'], json=True)
+        upload_meta = response.json()
 
-    upload_meta = ngw_request('PUT', upload_path, data=data)
+    elif mode == 'data':
+        upload_meta = ngw_request('PUT', upload_path, data=src)
+
     if name is not None:
         upload_meta['name'] = name
 
@@ -326,7 +337,7 @@ def create_layer_polygon_extrude():
     ))
 
 
-def create_tileset(tileset,tileset_name):
+def create_tileset(tileset, tileset_name):
     upload_meta = upload_file('url', tileset)
     tileset_body = dict(archive=upload_meta)
     tileset_id = post_resource('tileset_3d', tileset_name, demo_group_id, tileset_body)
@@ -396,7 +407,9 @@ if __name__ == "__main__":
     create_layer_polygon_z()
     create_layer_polygon_extrude()
 
-    create_tileset(tileset_bim,tileset_bim_name)
-    create_tileset(tileset_pg,tileset_pg_name)
     create_terrain_provider()
+
+    create_tileset(tileset_bim, tileset_bim_name)
+    create_tileset(tileset_pg, tileset_pg_name)
+
     create_scene_3d()
