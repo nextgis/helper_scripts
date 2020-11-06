@@ -44,6 +44,11 @@ project_model3d = {
     '1-515/5 3 подъезда': '1-510_3entrances'
 }
 
+# Vector layer with 2D style
+layer_polygon = 'https://github.com/nextgis/testdata/blob/master/3d/vector_layer_ARMA/layer_polygon_arma.geojson'
+layer_polygon_name = 'layer_polygon_arma'
+layer_polygon_fields = dict(
+)
 
 # Vector layer with POI style
 layer_poi = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/lenino-dachnoe/poi.geojson'
@@ -73,7 +78,7 @@ tileset_bim = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/3d_t
 tileset_bim_name = 'b3dm-cmpt-BIM'
 
 # 3D tileset Photogrammetry
-tileset_pg = 'https://nextgis.ru/data/ngw_3d/B3dm-АРМА.zip'
+tileset_pg = 'https://nextgis.ru/data/ngw_3d/b3dm-arma.zip'
 tileset_pg_name = 'b3dm-ARMA'
 
 # Terrain provider
@@ -312,7 +317,6 @@ def create_layer_polygon_z():
         display_name=layer_polygon_z_name
     ))
 
-
 def create_layer_polygon_extrude():
     # Create layer
     upload_meta = upload_file('url', layer_polygon_extrude)
@@ -406,6 +410,7 @@ if __name__ == "__main__":
     create_layer_poi()
     create_layer_polygon_z()
     create_layer_polygon_extrude()
+    create_layer_polygon()
 
     create_terrain_provider()
 
