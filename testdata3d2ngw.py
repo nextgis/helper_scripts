@@ -5,7 +5,7 @@ import re
 from requests import get, Request, Session
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 DEBUG = False
 
@@ -45,10 +45,8 @@ project_model3d = {
 }
 
 # Vector layer with 2D style
-layer_polygon = 'https://github.com/nextgis/testdata/blob/master/3d/vector_layer_ARMA/layer_polygon_arma.geojson'
-layer_polygon_name = 'layer_polygon_arma'
-layer_polygon_fields = dict(
-)
+layer_polygon_2d = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/vector_layer_ARMA/layer_polygon_arma.geojson'
+layer_polygon_2d_name = 'layer_polygon_arma'
 
 # Vector layer with POI style
 layer_poi = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/lenino-dachnoe/poi.geojson'
@@ -60,9 +58,9 @@ layer_poi_fields = dict(
 )
 
 # Vector layer with 3D geometries
-layer_polygon_z = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/lenino-dachnoe/polygonz_drape.geojson'
-layer_polygon_z_name = 'layer_polygon_z'
-layer_polygon_z_fields = dict(
+layer_polygon_3d = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/lenino-dachnoe/polygonz_drape.geojson'
+layer_polygon_3d_name = 'layer_polygon_3d'
+layer_polygon_3d_fields = dict(
     height='z_first'
 )
 
@@ -160,7 +158,7 @@ def upload_file(mode, src, name=None):
 
     if mode == 'url':
         log("Upload file from %s..." % src)
-        response = get(src, allow_redirects=True,stream=True)
+        response = get(src, allow_redirects=True, stream=True)
         with NamedTemporaryFile('wb') as tmp:
             for chunk in response.iter_content(chunk_size=1024):
                 tmp.write(chunk)
@@ -205,7 +203,7 @@ def create_demo_group():
     demo_group_id = post_resource('resource_group', settings['DEMO_GROUP'], settings['PARENT_ID'])
 
 
-def inspect_layer_fields(layer_id):
+def _inspect_layer_fields(layer_id):
     inspect_path = '/api/resource/%d' % layer_id
 
     res = ngw_request('GET', inspect_path)
@@ -215,6 +213,16 @@ def inspect_layer_fields(layer_id):
     for field in fields:
         fields_ids[field['keyname']] = field['id']
     return fields_ids
+
+
+def _create_vector_layer(name, group_id, upload_meta):
+    layer_body = dict(
+        srs=dict(id=3857),
+        source=upload_meta
+    )
+    layer_id = post_resource('vector_layer', layer_model3d_name, demo_group_id, layer_body)
+
+    return layer_id
 
 
 def create_layer_model3d():
@@ -240,14 +248,10 @@ def create_layer_model3d():
 
     # Create layer
     upload_meta = upload_file('data', json.dumps(layer))
-    layer_body = dict(
-        srs=dict(id=3857),
-        source=upload_meta
-    )
-    layer_id = post_resource('vector_layer', layer_model3d_name, demo_group_id, layer_body)
+    layer_id = _create_vector_layer(layer_model3d_name, demo_group_id, upload_meta)
 
     # Create style
-    fields_ids = inspect_layer_fields(layer_id)
+    fields_ids = _inspect_layer_fields(layer_id)
     style3d_body = dict(
         style_type='MODEL',
         model_id_type='FIELD',
@@ -268,14 +272,10 @@ def create_layer_model3d():
 def create_layer_poi():
     # Create layer
     upload_meta = upload_file('url', layer_poi)
-    layer_body = dict(
-        srs=dict(id=3857),
-        source=upload_meta
-    )
-    layer_id = post_resource('vector_layer', layer_poi_name, demo_group_id, layer_body)
+    layer_id = _create_vector_layer(layer_poi_name, demo_group_id, upload_meta)
 
     # Create style
-    fields_ids = inspect_layer_fields(layer_id)
+    fields_ids = _inspect_layer_fields(layer_id)
     style3d_body = dict(
         style_type='POI',
         poi_icon_type='FIELD',
@@ -294,40 +294,53 @@ def create_layer_poi():
     ))
 
 
-def create_layer_polygon_z():
+# def create_layer_polygon_2d():
+#     # Create layer
+#     upload_meta = upload_file('url', layer_polygon_2d)
+#     layer_id = _create_vector_layer(layer_polygon_2d_name, demo_group_id, upload_meta)
+
+#     # Create style
+#     fields_ids = _inspect_layer_fields(layer_id)
+#     style3d_body = dict(
+#         style_type='GEOJSON',
+#         gj_height_type='FIELD',
+#         gj_height_field=fields_ids[layer_polygon_3d_fields['height']]
+#     )
+#     style3d_name = layer_polygon_3d_name + '_style'
+#     style3d_id = post_resource('style_3d', style3d_name, layer_id, style3d_body)
+#     scene3d_layers.append(dict(
+#         resource_id=style3d_id,
+#         display_name=layer_polygon_3d_name
+#     ))
+
+
+def create_layer_polygon_3d():
     # Create layer
-    upload_meta = upload_file('url', layer_polygon_z)
-    layer_body = dict(
-        srs=dict(id=3857),
-        source=upload_meta
-    )
-    layer_id = post_resource('vector_layer', layer_polygon_z_name, demo_group_id, layer_body)
+    upload_meta = upload_file('url', layer_polygon_3d)
+    layer_id = _create_vector_layer(layer_polygon_3d_name, demo_group_id, upload_meta)
 
     # Create style
-    fields_ids = inspect_layer_fields(layer_id)
+    fields_ids = _inspect_layer_fields(layer_id)
     style3d_body = dict(
         style_type='GEOJSON',
         gj_height_type='FIELD',
-        gj_height_field=fields_ids[layer_polygon_z_fields['height']]
+        gj_height_field=fields_ids[layer_polygon_3d_fields['height']]
     )
-    style3d_name = layer_polygon_z_name + '_style'
+    style3d_name = layer_polygon_3d_name + '_style'
     style3d_id = post_resource('style_3d', style3d_name, layer_id, style3d_body)
     scene3d_layers.append(dict(
         resource_id=style3d_id,
-        display_name=layer_polygon_z_name
+        display_name=layer_polygon_3d_name
     ))
+
 
 def create_layer_polygon_extrude():
     # Create layer
     upload_meta = upload_file('url', layer_polygon_extrude)
-    layer_body = dict(
-        srs=dict(id=3857),
-        source=upload_meta
-    )
-    layer_id = post_resource('vector_layer', layer_polygon_extrude_name, demo_group_id, layer_body)
+    layer_id = _create_vector_layer(layer_polygon_extrude_name, demo_group_id, upload_meta)
 
     # Create style
-    fields_ids = inspect_layer_fields(layer_id)
+    fields_ids = _inspect_layer_fields(layer_id)
     style3d_body = dict(
         style_type='GEOJSON',
         gj_height_type='FIELD',
@@ -408,9 +421,9 @@ if __name__ == "__main__":
 
     create_layer_model3d()
     create_layer_poi()
-    create_layer_polygon_z()
+    # create_layer_polygon_2d() # WIP
+    create_layer_polygon_3d()
     create_layer_polygon_extrude()
-    create_layer_polygon()
 
     create_terrain_provider()
 
