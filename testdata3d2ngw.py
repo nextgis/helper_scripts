@@ -2,21 +2,28 @@
 from html import unescape
 import json
 import re
+import sys
 from requests import get, Request, Session
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from urllib.parse import urljoin
 
+from tusclient.client import TusClient  # pip install tuspy
+
+
 DEBUG = False
 
 
 settings = dict(
-    NGW_URL='http://mggt.staging.nextgis.com',#'http://localhost:8080',
+    NGW_URL='http://mggt.staging.nextgis.com',
+    #NGW_URL='http://localhost:8080',
     AUTH=('administrator', 'admin'),
     PARENT_ID=0,
     DEMO_GROUP='3D demo',
     SCENE_3D='3D scene',
-    RESOURCE_PREFIX=''
+    RESOURCE_PREFIX='',
+    DOWNLOAD_CHUNK_SIZE=4*2**20,
+    UPLOAD_CHUNK_SIZE=4*2**20
 )
 
 
@@ -46,7 +53,8 @@ project_model3d = {
 
 # Vector layer with 2D style
 layer_polygon_2d = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/vector_layer_ARMA/layer_polygon_arma.geojson'
-layer_polygon_2d_name = 'layer_polygon_arma'
+layer_polygon_2d_name = 'layer_polygon_extrude_fixed'
+layer_polygon_2d_qgis_style = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/vector_layer_ARMA/layer_polygon_arma_2d_style.qml'
 
 # Vector layer with POI style
 layer_poi = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/lenino-dachnoe/poi.geojson'
@@ -160,10 +168,17 @@ def upload_file(mode, src, name=None):
         log("Upload file from %s..." % src)
         response = get(src, allow_redirects=True, stream=True)
         with NamedTemporaryFile('wb') as tmp:
-            for chunk in response.iter_content(chunk_size=1024):
+            for chunk in response.iter_content(chunk_size=settings['DOWNLOAD_CHUNK_SIZE']):
                 tmp.write(chunk)
             tmp.flush()
-            furl = check_output(['tusc', 'client', urljoin(settings['NGW_URL'], tus_upload_path), tmp.name]).strip()
+
+            tus_client = TusClient(urljoin(settings['NGW_URL'], tus_upload_path))
+            metadata = None if name is None else dict(name=name)
+            if metadata is None:
+                metadata = dict(meta='data')  # FIXME: error on empty metadata
+            uploader = tus_client.uploader(tmp.name, metadata=metadata, chunk_size=settings['UPLOAD_CHUNK_SIZE'])
+            uploader.upload()
+            furl = uploader.url
             debug('tus upload_meta: %s' % furl)
         response = get(furl, auth=settings['AUTH'], json=True)
         upload_meta = response.json()
@@ -220,7 +235,7 @@ def _create_vector_layer(name, group_id, upload_meta):
         srs=dict(id=3857),
         source=upload_meta
     )
-    layer_id = post_resource('vector_layer', layer_model3d_name, demo_group_id, layer_body)
+    layer_id = post_resource('vector_layer', name, demo_group_id, layer_body)
 
     return layer_id
 
@@ -268,6 +283,8 @@ def create_layer_model3d():
         display_name=layer_model3d_name
     ))
 
+    return layer_id
+
 
 def create_layer_poi():
     # Create layer
@@ -293,25 +310,47 @@ def create_layer_poi():
         display_name=layer_poi_name
     ))
 
+    return layer_id
 
-# def create_layer_polygon_2d():
-#     # Create layer
-#     upload_meta = upload_file('url', layer_polygon_2d)
-#     layer_id = _create_vector_layer(layer_polygon_2d_name, demo_group_id, upload_meta)
 
-#     # Create style
-#     fields_ids = _inspect_layer_fields(layer_id)
-#     style3d_body = dict(
-#         style_type='GEOJSON',
-#         gj_height_type='FIELD',
-#         gj_height_field=fields_ids[layer_polygon_3d_fields['height']]
-#     )
-#     style3d_name = layer_polygon_3d_name + '_style'
-#     style3d_id = post_resource('style_3d', style3d_name, layer_id, style3d_body)
-#     scene3d_layers.append(dict(
-#         resource_id=style3d_id,
-#         display_name=layer_polygon_3d_name
-#     ))
+def create_layer_polygon_2d():
+    # Create layer
+    upload_meta = upload_file('url', layer_polygon_2d)
+    layer_id = _create_vector_layer(layer_polygon_2d_name, demo_group_id, upload_meta)
+
+    # Create style
+    style3d_body = dict(
+        style_type='GEOJSON',
+
+        gj_height_type='VALUE',
+        gj_height=15,
+
+        gj_stroke_type='VALUE',
+        gj_stroke='Grey',
+
+        gj_stroke_fill_type='VALUE',
+        gj_stroke_fill='White'
+    )
+    style3d_name = layer_polygon_2d_name + '_style'
+    style3d_id = post_resource('style_3d', style3d_name, layer_id, style3d_body)
+    scene3d_layers.append(dict(
+        resource_id=style3d_id,
+        display_name=layer_polygon_2d_name
+    ))
+
+    # Create qgis style
+    upload_meta = upload_file('url', layer_polygon_2d_qgis_style)
+    qgis_style_body = dict(
+        file_upload=upload_meta
+    )
+    qgis_style_name = layer_polygon_2d_name + '_qgis_style'
+    qgis_style_id = post_resource('qgis_vector_style', qgis_style_name, layer_id, qgis_style_body)
+    scene3d_layers.append(dict(
+        resource_id=qgis_style_id,
+        display_name=qgis_style_name + '_qgis'
+    ))
+
+    return layer_id
 
 
 def create_layer_polygon_3d():
@@ -333,6 +372,8 @@ def create_layer_polygon_3d():
         display_name=layer_polygon_3d_name
     ))
 
+    return layer_id
+
 
 def create_layer_polygon_extrude():
     # Create layer
@@ -353,15 +394,21 @@ def create_layer_polygon_extrude():
         display_name=layer_polygon_extrude_name
     ))
 
+    return layer_id
 
-def create_tileset(tileset, tileset_name):
+
+def create_tileset(tileset, tileset_name, feature_layer_id=None):
     upload_meta = upload_file('url', tileset)
     tileset_body = dict(archive=upload_meta)
     tileset_id = post_resource('tileset_3d', tileset_name, demo_group_id, tileset_body)
-    scene3d_layers.append(dict(
+
+    scene3d_element = dict(
         resource_id=tileset_id,
         display_name=tileset_name
-    ))
+    )
+    if feature_layer_id is not None:
+        scene3d_element['classification_layer'] = dict(id=feature_layer_id)
+    scene3d_layers.append(scene3d_element)
 
 
 def create_terrain_provider():
@@ -419,15 +466,16 @@ def create_scene_3d():
 if __name__ == "__main__":
     create_demo_group()
 
+    create_terrain_provider()
+
     create_layer_model3d()
     create_layer_poi()
-    # create_layer_polygon_2d() # WIP
     create_layer_polygon_3d()
     create_layer_polygon_extrude()
 
-    create_terrain_provider()
+    layer_id = create_layer_polygon_2d()
 
+    create_tileset(tileset_pg, tileset_pg_name, layer_id)
     create_tileset(tileset_bim, tileset_bim_name)
-    create_tileset(tileset_pg, tileset_pg_name)
 
     create_scene_3d()
