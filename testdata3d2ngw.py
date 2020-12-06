@@ -4,6 +4,7 @@ import json
 import re
 import sys
 from requests import get, Request, Session
+from requests.exceptions import Timeout
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from urllib.parse import urljoin
@@ -23,7 +24,8 @@ settings = dict(
     SCENE_3D='3D scene',
     RESOURCE_PREFIX='',
     DOWNLOAD_CHUNK_SIZE=4*2**20,
-    UPLOAD_CHUNK_SIZE=4*2**20
+    UPLOAD_CHUNK_SIZE=4*2**20,
+    TIMEOUT=60*20
 )
 
 
@@ -130,7 +132,7 @@ def ngw_request(method, path, **kwargs):
 
     req = Request(method,  url, auth=settings['AUTH'], **kwargs)
     prepared = session.prepare_request(req)
-    res = session.send(prepared)
+    res = session.send(prepared, timeout=settings['TIMEOUT'])
 
     def find_error_message(res):
         msg = res.text
@@ -209,7 +211,14 @@ def post_resource(cls, display_name, parent_id, resource_body=None, extend_body=
 
     debug(json.dumps(resource, indent=4, sort_keys=True))
 
-    res = ngw_request('POST', resource_path, json=resource)
+    try:
+        res = ngw_request('POST', resource_path, json=resource)
+    except Timeout:
+        # Check resource created
+        res = ngw_request('GET', '/api/resource/search/', params=dict(display_name=display_name))
+        if len(res) != 1:
+            error('Resource (display_name="%s") creation timed out.' % display_name)
+
     return res['id']
 
 
