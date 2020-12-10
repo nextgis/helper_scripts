@@ -16,7 +16,7 @@ DEBUG = False
 
 
 settings = dict(
-    NGW_URL='http://mggt.staging.nextgis.com',
+    NGW_URL='https://threedim.staging.nextgis.com',
     #NGW_URL='http://localhost:8080',
     AUTH=('administrator', 'admin'),
     PARENT_ID=0,
@@ -30,6 +30,11 @@ settings = dict(
 
 
 # sources {
+
+# Basemap layers
+basemap_google_satellite = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
+basemap_osm = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+
 
 # Vector layer with 3D Models style
 layer_model3d = 'https://raw.githubusercontent.com/nextgis/testdata/master/3d/lenino-dachnoe/3d_models.geojson'
@@ -105,6 +110,7 @@ terrain_provider = dict(
 
 # Globals
 demo_group_id = None
+scene3d_basemaps = []
 scene3d_layers = []
 terrain_provider_id = None
 
@@ -225,6 +231,18 @@ def post_resource(cls, display_name, parent_id, resource_body=None, extend_body=
 def create_demo_group():
     global demo_group_id
     demo_group_id = post_resource('resource_group', settings['DEMO_GROUP'], settings['PARENT_ID'])
+
+
+def create_basemap_layer(url, display_name):
+    basemap_body = dict(url=url)
+    layer_id = post_resource('basemap_layer', display_name, demo_group_id, basemap_body)
+
+    scene3d_basemaps.append(dict(
+        resource_id=layer_id,
+        display_name=display_name,
+        enabled=True,
+        opacity=None
+    ))
 
 
 def _inspect_layer_fields(layer_id):
@@ -464,6 +482,9 @@ def create_scene_3d():
                 display_name=terrain_provider['provider_name'],
                 enabled=False
             )]
+        ),
+        scene3d_basemap=dict(
+            basemaps3d=scene3d_basemaps
         )
     )
     post_resource(
@@ -474,6 +495,9 @@ def create_scene_3d():
 
 if __name__ == "__main__":
     create_demo_group()
+
+    create_basemap_layer(basemap_google_satellite, 'Google satellite hybrid')
+    create_basemap_layer(basemap_osm, 'Openstreetmap standard')
 
     create_terrain_provider()
 
