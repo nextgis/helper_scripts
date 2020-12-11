@@ -158,6 +158,9 @@ def ngw_request(method, path, **kwargs):
     if (res.status_code // 100) != 2:
         msg = find_error_message(res)
 
+        if res.status_code == 504:
+            raise Timeout(msg)
+
         error((
             "Request %s on \"%s\" got status code %d. Error:" % (
                 method, url, res.status_code
