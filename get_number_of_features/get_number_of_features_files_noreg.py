@@ -28,8 +28,12 @@ for f in files:
         f_reg = f.split('-2019')[0]
     elif '-2020' in f:
         f_reg = f.split('-2020')[0]
+    elif '-2021' in f:
+        f_reg = f.split('-2020')[0]
     elif '-bot' in f:
         f_reg = f.split('-bot')[0]
+    elif '-000000' in f:
+        f_reg = f.split('-000000')[0]
     print('Processing ' + f)
     
     
