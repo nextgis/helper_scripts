@@ -18,7 +18,7 @@ else:
     path = ''
 
 cur_dir = os.getcwd()
-data_dir = '//nextgis-nas/share/data/'
+data_dir = '//nextgis-nas/share/data/cntry/'
 dst_dir = 'd:/Programming/Python/helper_scripts/get_number_of_features/'
 
 
@@ -30,7 +30,10 @@ output = open('result.csv','w')
 output.write('REG;LAYER;NUM\n')
 
 for f in files:
-    f_reg = f.split('-')[0] + '-' + f.split('-')[1]
+    if 'cntry' in data_dir:
+        f_reg = f.split('-')[0]
+    else:
+        f_reg = f.split('-')[0] + '-' + f.split('-')[1]
     print('Processing ' + f)
         
     #unpack
