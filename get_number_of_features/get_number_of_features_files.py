@@ -19,6 +19,7 @@ else:
 
 cur_dir = os.getcwd()
 data_dir = '//nextgis-nas/share/data/cntry/'
+#data_dir = '//nextgis-nas/share/data/'
 dst_dir = 'd:/Programming/Python/helper_scripts/get_number_of_features/'
 
 
@@ -47,27 +48,29 @@ for f in files:
     #calculate
     list_of_layers = glob.glob('*.shp')
     for layer_shp in list_of_layers:
-        layer_name = layer_shp.replace('.shp','')
-        driver = ogr.GetDriverByName("ESRI Shapefile")
-        source_ds = driver.Open(layer_shp, 0)
-        layer = source_ds.GetLayerByIndex(0)
-        res = layer.GetFeatureCount()
-        
-        output.write(f_reg + ';' + layer_name + ';' + str(res) + '\n')
+        if 'boundary-polygon-' not in layer_shp:
+            layer_name = layer_shp.replace('.shp','')
+            driver = ogr.GetDriverByName("ESRI Shapefile")
+            source_ds = driver.Open(layer_shp, 0)
+            layer = source_ds.GetLayerByIndex(0)
+            res = layer.GetFeatureCount()
+            
+            output.write(f_reg + ';' + layer_name + ';' + str(res) + '\n')
 
-        source_ds.Destroy()
+            source_ds.Destroy()
 
     list_of_layers = glob.glob('*.gpkg')
     for layer_gpkg in list_of_layers:
-        layer_name = layer_gpkg.replace('.gpkg','')
-        driver = ogr.GetDriverByName("GPKG")
-        source_ds = driver.Open(layer_gpkg, 0)
-        layer = source_ds.GetLayerByIndex(0)
-        res = layer.GetFeatureCount()
-        
-        output.write(f_reg + ';' + layer_name + ';' + str(res) + '\n')
+        if 'boundary-polygon-' not in layer_gpkg:
+            layer_name = layer_gpkg.replace('.gpkg','')
+            driver = ogr.GetDriverByName("GPKG")
+            source_ds = driver.Open(layer_gpkg, 0)
+            layer = source_ds.GetLayerByIndex(0)
+            res = layer.GetFeatureCount()
+            
+            output.write(f_reg + ';' + layer_name + ';' + str(res) + '\n')
 
-        source_ds.Destroy()
+            source_ds.Destroy()
 
     #cleanup
     os.chdir('../../')
