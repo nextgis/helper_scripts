@@ -29,6 +29,7 @@ Helpful scripts
 * oopt_federation.py - скрипт для конкретного проекта, сейчас приостановлен.
 * arcgis_featureservice2ngw.py - import to NextGIS Web all layers from ArcGIS Feature service.
 * upl_benchmark - generate vector grids files, calculate ngw upload capacity
+* dublicate_group - recursive replication resource group in ngw
  
 # License
 
