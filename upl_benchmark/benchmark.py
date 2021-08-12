@@ -18,6 +18,9 @@ login = 'administrator'
 password = 'demodemo'
 GROUP = 0
 
+
+
+
 DIR = 'DUMPS'
 if os.path.exists(DIR) and os.path.isdir(DIR):
     shutil.rmtree(DIR)
@@ -33,7 +36,7 @@ if not os.path.exists(STATISTICDIR) and not os.path.isdir(STATISTICDIR):
     os.mkdir(STATISTICDIR)
 
 
-ngwapi = pyngw.Pyngw(ngw_url = ngw_url, login = login, password = password)
+ngwapi = pyngw.Pyngw(ngw_url = ngw_url, login = login, password = password,log_level='DEBUG')
 
 
 def pack_shp(filename,output_filename):
@@ -112,11 +115,14 @@ def generate_grid_file(count,filename, lat, lon):
 
 def generate_grids():
 
+
+    mode1 = False
     mode2 = False
+    mode3 = True
 
     featurecouns = list()
-    featurecounts = (1000,2000,5000,10000,10000,10000,10000,10000,20*1000,30*1000,40*1000,50*1000,70*1000,100*1000,200*1000,300*1000,500*1000,800*1000)
-    #featurecounts = (1000,2000,5000)
+    featurecounts = (1000,2000,5000,10000,10000,20*1000,30*1000,40*1000,50*1000,50*1000,60*1000,70*1000,100*1000,200*1000,300*1000,400*1000,500*1000,800*1000)
+    #featurecounts = (5000,5000)
     shift = 0
     
     group_lvl1 = ngwapi.create_resource_group(GROUP, display_name='upload_benchmark' , overwrite='truncate')
@@ -128,34 +134,36 @@ def generate_grids():
         csvwriter = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(['features','duration','result','mode'])
         
-        with alive_bar(len(featurecounts)) as bar:
-            for featurecount in featurecounts:
-                shp_filename = os.path.join(DIR,str(featurecount)+'.shp')
-                zip_filename = os.path.join(DATADIR,str(featurecount)+'.zip')
-                if os.path.exists(DIR) and os.path.isdir(DIR): 
-                    shutil.rmtree(DIR)
-                os.mkdir(DIR)
-		        
-                shift = shift + (featurecount/100/2*0.001)+0.001
-                bar.text(str(featurecount))
-                generate_grid_file(featurecount,shp_filename,37.666 + shift,55.666)
-                bar()
-		
-                if mode2 == True:
-                    group_id = ngwapi.create_resource_group(group_lvl1, display_name='upload_benchmark '+str(featurecount)+' 2 '+ngwapi.generate_name(), overwrite='truncate')
-                    execution_result = True
-                    bar.text('uploading '+str(featurecount))
-                    start_time = time.time()
-                    try:
-                        ngwapi.upload_vector_layer_ogr2ogr(shp_filename,group_id, display_name=str(featurecount)+'.zip')
-                    except:
-                        execution_result = False
-                    end_time = time.time()
-                    execute_seconds = end_time-start_time
-                    print(featurecount,  math.ceil(execute_seconds),execution_result)
+    with alive_bar(len(featurecounts)) as bar:
+        for featurecount in featurecounts:
+            shp_filename = os.path.join(DIR,str(featurecount)+'.shp')
+            zip_filename = os.path.join(DATADIR,str(featurecount)+'.zip')
+            if os.path.exists(DIR) and os.path.isdir(DIR): 
+                shutil.rmtree(DIR)
+            os.mkdir(DIR)
+	        
+            shift = shift + (featurecount/100/2*0.001)+0.001
+            bar.text(str(featurecount))
+            generate_grid_file(featurecount,shp_filename,37.666 + shift,55.666)
+            bar()
+	
+            if mode2 == True:
+                group_id = ngwapi.create_resource_group(group_lvl1, display_name='upload_benchmark '+str(featurecount)+' 2 '+ngwapi.generate_name(), overwrite='truncate')
+                execution_result = True
+                bar.text('uploading '+str(featurecount))
+                start_time = time.time()
+                try:
+                    ngwapi.upload_vector_layer_ogr2ogr(shp_filename,group_id, display_name=str(featurecount)+'.zip')
+                except:
+                    execution_result = False
+                end_time = time.time()
+                execute_seconds = end_time-start_time
+                print(featurecount,  math.ceil(execute_seconds),execution_result)
+                with open(csv_filename, 'a', newline='') as csvfile:
+                    csvwriter = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)                
                     csvwriter.writerow([featurecount,math.ceil(execute_seconds),execution_result,2])
-                        
-		        
+                   
+            if mode1 == True:
                 layer_path = pack_shp(shp_filename,zip_filename)
                 
                 group_id = None
@@ -169,15 +177,43 @@ def generate_grids():
                 bar.text('uploading '+str(featurecount))
                 start_time = time.time()
                 try:
-                    ngwapi.upload_vector_layer(zip_filename,group_id, display_name=str(featurecount)+'.zip')
+                    ngwapi.upload_vector_layer(zip_filename,group_id, display_name=str(featurecount)+'.zip FILE_UPLOAD POST')
                 except:
                     execution_result = False
                 end_time = time.time()
                 execute_seconds = end_time-start_time
                 print(featurecount,  math.ceil(execute_seconds),execution_result)
-                csvwriter.writerow([featurecount,math.ceil(execute_seconds),execution_result,1])
-                 
-                 
+                with open(csv_filename, 'a', newline='') as csvfile:
+                    csvwriter = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)                
+                    csvwriter.writerow([featurecount,math.ceil(execute_seconds),execution_result,1])
+                    
+            if mode3 == True:
+                layer_path = pack_shp(shp_filename,zip_filename)
+                
+                group_id = None
+                while group_id is None:
+                    try:
+                        group_id = ngwapi.create_resource_group(group_lvl1, display_name='upload_benchmark '+str(featurecount)+' 3 TUS '+ngwapi.generate_name(), overwrite='truncate')
+                    except:
+                        group_id = None
+                        time.sleep(5)
+                assert group_id is not None
+                execution_result = True
+                bar.text('uploading '+str(featurecount)+' tus')
+                start_time = time.time()
+                try:
+                
+                    ngwapi.upload_vector_layer_tus(zip_filename,group_id, display_name=str(featurecount)+'.zip TUS')
+                
+                except:
+                    execution_result = False
+                end_time = time.time()
+                execute_seconds = end_time-start_time
+                print(featurecount,  math.ceil(execute_seconds),execution_result,'mode 3')
+                with open(csv_filename, 'a', newline='') as csvfile:
+                    csvwriter = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)                
+                    csvwriter.writerow([featurecount,math.ceil(execute_seconds),execution_result,3])
+                
        
         
 if __name__ == "__main__":
