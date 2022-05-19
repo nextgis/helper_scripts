@@ -5,7 +5,6 @@ Helpful scripts
 # Script list and detailes
 
 * area_calc - 
-* cedar2ngw2 - 
 * distance_calc_qgis - 
 * get_number_of_features - 
 * grass_clipper - 
@@ -13,7 +12,6 @@ Helpful scripts
 * inst_webmaps2csv - 
 * kml2geojson - 
 * myhouse_osm - 
-* ngw2ngw - 
 * ngw_instances_mtime - 
 * osmlab2qms - 
 * qmsnotifier - 
@@ -29,8 +27,13 @@ Helpful scripts
 * oopt_federation.py - скрипт для конкретного проекта, сейчас приостановлен.
 * arcgis_featureservice2ngw.py - import to NextGIS Web all layers from ArcGIS Feature service.
 * upl_benchmark - generate vector grids files, calculate ngw upload capacity
+
+## data synchonisation
+
+* cedar2ngw2 - deprecated
 * dublicate_group - recursive replication resource group in ngw
 * ngw_replication - replication of one layer in ngw
+* ngw2ngw_2way - deprecated, two-direction replication nextgis.com layers withouth unique id.
  
 # License
 
