@@ -30,6 +30,7 @@ Helpful scripts
 * arcgis_featureservice2ngw.py - import to NextGIS Web all layers from ArcGIS Feature service.
 * upl_benchmark - generate vector grids files, calculate ngw upload capacity
 * dublicate_group - recursive replication resource group in ngw
+* ngw_replication - replication of one layer in ngw
  
 # License
 
