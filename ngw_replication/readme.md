@@ -1,4 +1,7 @@
 
+dublicate/replicate/copyng nextgis.com layer between instances. Standalone script and code for ctontab
+Дублирование/реплицирование/копирование слоя между инстансами nextis.com  standalone скрипт и код для cron
+
 
 ## Run in local docker
 
