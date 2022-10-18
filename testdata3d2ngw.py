@@ -1,17 +1,14 @@
-# -*- coding: utf-8 -*-
 from html import unescape
 import json
 import re
-import sys
 from requests import get, Request, Session
 from requests.exceptions import Timeout
-from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from urllib.parse import urljoin
 
 from tusclient.client import TusClient  # pip install tuspy
 
-
+1/0  # TODO: don't delete b3dm-ARMA!!!
 DEBUG = False
 
 
@@ -106,6 +103,20 @@ terrain_provider = dict(
 )
 
 # } sources
+
+cls_delete_order = (
+    'resource_group',
+    'webmap',
+    'scene_3d',
+    'tileset_3d',
+    'vector_layer',
+    'tmsclient_layer',
+    'tmsclient_connection',
+    'wmsclient_layer',
+    'wmsclient_connection',
+    'basemap_layer',
+    'model_3d',
+)
 
 
 # Globals
@@ -231,9 +242,21 @@ def post_resource(cls, display_name, parent_id, resource_body=None, extend_body=
     return res['id']
 
 
-def create_demo_group():
+def init_demo_group():
     global demo_group_id
-    demo_group_id = post_resource('resource_group', settings['DEMO_GROUP'], settings['PARENT_ID'])
+    data = ngw_request('GET', '/api/resource/search/', params=dict(display_name=settings['DEMO_GROUP'], parent_id=settings['PARENT_ID']))
+    if len(data) == 1:
+        resource = data[0]
+        demo_group_id = resource['resource']['id']
+        log(f"Found demo group (id={demo_group_id}).")
+
+        if resource['resource']['children']:
+            log("Clear demo group children...")
+            children = ngw_request('GET', '/api/resource/search/', params=dict(parent_id=demo_group_id))
+            for resource in sorted(children, key=lambda res: cls_delete_order.index(res['resource']['cls'])):
+                ngw_request('DELETE', '/api/resource/%d' % resource['resource']['id'])
+    else:
+        demo_group_id = post_resource('resource_group', settings['DEMO_GROUP'], settings['PARENT_ID'])
 
 
 def create_basemap_layer(url, display_name):
@@ -497,7 +520,7 @@ def create_scene_3d():
 
 
 if __name__ == "__main__":
-    create_demo_group()
+    init_demo_group()
 
     create_basemap_layer(basemap_google_satellite, 'Google satellite hybrid')
     create_basemap_layer(basemap_osm, 'Openstreetmap standard')
