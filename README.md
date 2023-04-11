@@ -21,6 +21,7 @@ Helpful scripts
 * layers2ngw - more smart version, take folder with .geojson and geotiff files, upload it to ngw, create simple styles
 * ngw_service_create - create vector styles, WMS and WFS services for resource group in ngw
 * ngw_webmap_create - create webmap for resource group in ngw
+* ngw_change_owners - change owners for all element in resource tree in ngw
 * wfs2ngw - sync wfs -> ngw vector layers. The layer should be created from geojson formed by gdal (i.e. ogr2ogr)
 * dict_sync - sync lookup tables with remote sources
 * update_ngw_from_geojson.py - sync layer in ngw with local file with unique id field.
