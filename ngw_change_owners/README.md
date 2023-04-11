@@ -40,7 +40,7 @@ optional arguments:
   --user USER          new owner id
   -v, --version        print version
 
-python3 ngw_change_owners.py --url https://sandbox.nextgis.com --login administrator --password demodemo --id 2964 --user 7
-
+```
+```
 docker run registry.nextgis.com/ngw_change_owners:prod python3 ngw_change_owners.py --url https://sandbox.nextgis.com --login administrator --password demodemo --id 2964 --user 7
 ```
