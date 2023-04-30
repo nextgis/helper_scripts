@@ -17,20 +17,26 @@ else:
     zippath = ''
 
 cur_dir = os.getcwd()
-data_dir = 'd:/Programming/Python/helper_scripts/get_number_of_features/data/' #'d:\\Programming\\Python\\unpack-convert-repack\\data\\' #'//han.nextgis.net/share/data/pbf/shp/' #'c:\\Work\\' \\han.nextgis.net\share\data\pbf\shp\
-#data_dir = '//nextgis-nas/share/data/'
 dst_dir = 'd:/Programming/Python/helper_scripts/get_number_of_features/'
+data_dir = dst_dir + '/data/' 
 
 os.chdir(data_dir)
 files = glob.glob('*.zip')
 files.sort()
 os.chdir(dst_dir)
 
+ext = 'gpkg'
+#ext = 'shp'
+driver_str = 'GPKG'
+#driver_str = 'ESRI Shapefile'
+format = 'gpkg'
+#format = 'shape'
+
 output = open('result.csv','w')
 #output.write('REG;LAYER;NUM\n')
 
 for f in files:
-    f_reg = f.replace('-gpkg.zip','')
+    f_reg = f.replace('-%s.zip' % format,'')
     print('Processing ' + f)
     
     if os.path.getsize(data_dir + f) > 22:
@@ -44,40 +50,17 @@ for f in files:
         os.chdir('temp')
         
         #calculate
-        list_of_layers = glob.glob('data\*.gpkg')
-        for layer_shp in list_of_layers:
-            if '-lvl' not in layer_shp:
-                layer_name = layer_shp.replace('.gpkg','')
-                driver = ogr.GetDriverByName("GPKG")
-                source_ds = driver.Open(layer_shp, 0)
+        #list_of_layers = glob.glob('data\*.' + ext)
+        list_of_layers = glob.glob('*.' + ext)
+        for layer in list_of_layers:
+            if '-lvl' not in layer:
+                layer_name = layer.replace('.' + ext,'')
+                driver = ogr.GetDriverByName(driver_str)
+                source_ds = driver.Open(layer, 0)
                 layer = source_ds.GetLayerByIndex(0)
                 res = layer.GetFeatureCount()
                 
                 output.write(f_reg + ';' + layer_name + ';' + str(res) + '\n')
-                source_ds.Destroy()
-
-        list_of_layers = glob.glob('*.csv')
-        for layer_shp in list_of_layers:
-            layer_name = layer_shp.replace('.csv','')
-            driver = ogr.GetDriverByName("CSV")
-            source_ds = driver.Open(layer_shp, 0)
-            layer = source_ds.GetLayerByIndex(0)
-            res = layer.GetFeatureCount()
-            
-            output.write(f_reg + ';' + layer_name + ';' + str(res) + '\n')
-            source_ds.Destroy()
-
-        list_of_layers = glob.glob('*.gpkg')
-        for layer_gpkg in list_of_layers:
-            if 'boundary-polygon-' not in layer_gpkg:
-                layer_name = layer_gpkg.replace('.gpkg','')
-                driver = ogr.GetDriverByName("GPKG")
-                source_ds = driver.Open(layer_gpkg, 0)
-                layer = source_ds.GetLayerByIndex(0)
-                res = layer.GetFeatureCount()
-                
-                output.write(f_reg + ';' + layer_name + ';' + str(res) + '\n')
-
                 source_ds.Destroy()
 
         #cleanup
