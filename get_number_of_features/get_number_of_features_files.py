@@ -46,12 +46,14 @@ for f in files:
         os.chdir(cur_dir)
         cmd = zippath + 'unzip -q ' + f + ' -d temp'
         os.system(cmd)
-        #if os.path.exists('nul'): os.remove('nul')
         os.chdir('temp')
         
         #calculate
-        #list_of_layers = glob.glob('data\*.' + ext)
-        list_of_layers = glob.glob('*.' + ext)
+        if os.path.exists('data'):
+            list_of_layers = glob.glob('data\*.' + ext)
+        else:
+            list_of_layers = glob.glob('*.' + ext)
+            
         for layer in list_of_layers:
             if '-lvl' not in layer:
                 layer_name = layer.replace('.' + ext,'')
