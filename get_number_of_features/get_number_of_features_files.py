@@ -35,7 +35,7 @@ format = 'gpkg'
 output = open('result.csv','w')
 
 for f in files:
-    full_path = os.join.path(data_dir,f)
+    full_path = os.path.join(data_dir,f)
     f_reg = f.replace('-%s.zip' % format,'')
     print('Processing ' + f)
     
