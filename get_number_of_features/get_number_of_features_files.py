@@ -35,13 +35,14 @@ format = 'gpkg'
 output = open('result.csv','w')
 
 for f in files:
+    full_path = os.join.path(data_dir,f)
     f_reg = f.replace('-%s.zip' % format,'')
     print('Processing ' + f)
     
-    if os.path.getsize(data_dir + f) > 22:
+    if os.path.getsize(full_path) > 22:
 
         #unpack
-        shutil.copy(data_dir + f,dst_dir)
+        shutil.copy(full_path,dst_dir)
         os.chdir(cur_dir)
         cmd = zippath + 'unzip -q ' + f + ' -d temp'
         os.system(cmd)
