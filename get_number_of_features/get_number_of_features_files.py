@@ -36,7 +36,7 @@ output = open('result.csv','w')
 
 for f in files:
     full_path = os.path.join(data_dir,f)
-    f_reg = f.replace('-%s.zip' % format,'')
+    f_reg = f.replace('.zip','').replace('-%s.zip' % format,'')
     print('Processing ' + f)
     
     if os.path.getsize(full_path) > 22:
