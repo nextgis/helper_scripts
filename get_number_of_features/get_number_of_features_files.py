@@ -12,7 +12,7 @@ import platform
 from osgeo import ogr
 
 if platform.uname()[0] == 'Windows':
-    zippath = 'c:/tools/'
+    zippath = 'c:/tools/7-Zip/'
 else:
     zippath = ''
 
@@ -44,7 +44,7 @@ for f in files:
         #unpack
         shutil.copy(full_path,dst_dir)
         os.chdir(cur_dir)
-        cmd = zippath + 'unzip -q ' + f + ' -d temp'
+        cmd = zippath + '7z e ' + f + ' -otemp'
         os.system(cmd)
         os.chdir('temp')
         
