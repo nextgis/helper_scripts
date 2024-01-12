@@ -4,12 +4,15 @@
 #sudo -u postgres psql -d osmshp -t -A -F";" -c "SELECT id, code FROM region" > regs.csv
 #then move results.csv to data.nextgis.com
 
-import os
+import os,argparse
 import glob
 import shutil
-import csv
 import platform
 from osgeo import ogr
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-p','--product', required=True, choices=['base','msbld','reforma','dem', 'oopt', 'rnlic'], help='Unzip first')
+args = parser.parse_args()
 
 if platform.uname()[0] == 'Windows':
     zippath = 'c:/tools/7-Zip/'
@@ -44,7 +47,7 @@ for f in files:
         #unpack
         shutil.copy(full_path,dst_dir)
         os.chdir(cur_dir)
-        cmd = zippath + '7z e ' + f + ' -otemp'
+        cmd = zippath + '7z x ' + f + ' -otemp'
         os.system(cmd)
         os.chdir('temp')
         
@@ -62,7 +65,7 @@ for f in files:
                 layer = source_ds.GetLayerByIndex(0)
                 res = layer.GetFeatureCount()
                 
-                output.write(f_reg + ';' + layer_name + ';' + str(res) + '\n')
+                output.write(f_reg + ';' + layer_name + ';' + str(res) + ';' + args.product + '\n')
                 source_ds.Destroy()
 
         #cleanup
