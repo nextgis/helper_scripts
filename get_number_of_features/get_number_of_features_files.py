@@ -11,8 +11,9 @@ import platform
 from osgeo import ogr
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-p','--product', required=True, choices=['base','msbld','reforma','dem', 'oopt', 'rnlic'], help='Unzip first')
+parser.add_argument('-p','--product', required=False, choices=['osm','msbld','reforma','dem', 'oopt', 'rnlic'], help='Unzip first')
 args = parser.parse_args()
+if not args.product: product = ''
 
 if platform.uname()[0] == 'Windows':
     zippath = 'c:/tools/7-Zip/'
@@ -65,7 +66,7 @@ for f in files:
                 layer = source_ds.GetLayerByIndex(0)
                 res = layer.GetFeatureCount()
                 
-                output.write(f_reg + ';' + layer_name + ';' + str(res) + ';' + args.product + '\n')
+                output.write(f_reg + ';' + layer_name + ';' + str(res) + ';' + product + '\n')
                 source_ds.Destroy()
 
         #cleanup
