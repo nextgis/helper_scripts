@@ -11,7 +11,7 @@ import platform
 from osgeo import ogr
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-p','--product', required=False, choices=['osm','msbld','msrd','reforma','dem', 'oopt', 'rnlic'], help='Product type')
+parser.add_argument('-p','--product', required=False, choices=['osm','msbld','msrd','reforma','dem', 'oopt', 'rnlic', 'overture'], help='Product type')
 args = parser.parse_args()
 
 if os.path.exists('temp'):
