@@ -59,14 +59,12 @@ def get_args():
 def get_ngw_layer_structure(ngw_url,layer_id,ngw_creds):
 
     url = ngw_url + '/api/resource/' +  str(layer_id)
-    print url
     req = requests.get(url, auth=ngw_creds)
 
     return req.json()
 
 def create_vector_layer(ngw_url,payload,ngw_creds, parent_id=0):
     url = ngw_url + '/api/resource/'
-    print url
 
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
@@ -74,7 +72,7 @@ def create_vector_layer(ngw_url,payload,ngw_creds, parent_id=0):
 
     req = requests.post(url, json = payload, auth=ngw_creds)
 
-    print req.content
+    print(req.content)
 
 def prepare_structure(structure):
 
